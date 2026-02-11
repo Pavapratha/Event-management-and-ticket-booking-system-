@@ -1,0 +1,112 @@
+:root {
+  /* Primary Colors - Purple/Violet Theme */
+  --primary-color: #8b5cf6;
+  --primary-dark: #7c3aed;
+  --primary-light: #a78bfa;
+  --primary-gradient: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 50%, #a78bfa 100%);
+  
+  /* Dark Theme Colors */
+  --bg-dark: #0f172a;
+  --bg-dark-secondary: #1e293b;
+  --bg-dark-tertiary: #334155;
+  --bg-card: #1e293b;
+  --bg-card-hover: #2d3a4f;
+  
+  /* Text Colors */
+  --text-white: #ffffff;
+  --text-light: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-dark: #1f2937;
+  
+  /* Status Colors */
+  --success-color: #10b981;
+  --error-color: #ef4444;
+  --warning-color: #f59e0b;
+  --info-color: #3b82f6;
+  
+  /* Border & Shadow */
+  --border-color: #334155;
+  --border-light: #475569;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-glow: 0 0 20px rgba(139, 92, 246, 0.3);
+  
+  /* Spacing */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+  
+  /* Transitions */
+  --transition-fast: all 0.15s ease;
+  --transition: all 0.3s ease;
+  --transition-slow: all 0.5s ease;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-dark);
+  color: var(--text-light);
+  line-height: 1.6;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-dark-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-dark-tertiary);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-light);
+}
+
+/* Selection */
+::selection {
+  background: var(--primary-color);
+  color: var(--text-white);
+}
+
+/* Links */
+a {
+  color: var(--primary-light);
+  text-decoration: none;
+  transition: var(--transition-fast);
+}
+
+a:hover {
+  color: var(--primary-color);
+}

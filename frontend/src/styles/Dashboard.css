@@ -1,0 +1,221 @@
+/* Dashboard Styles - Dark Theme */
+
+.dashboard-welcome {
+  margin-bottom: 2rem;
+}
+
+.dashboard-welcome h1 {
+  color: var(--text-white);
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-subtitle {
+  color: var(--text-muted);
+  font-size: 1.125rem;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.dashboard-card {
+  text-align: center;
+  padding: 1.5rem;
+}
+
+.dashboard-card .card-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.dashboard-card h3 {
+  color: var(--text-white);
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.dashboard-card .card-stat {
+  color: var(--primary-color);
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.dashboard-card .card-label {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.dashboard-card.user-card {
+  text-align: left;
+}
+
+.dashboard-card.user-card .card-icon {
+  display: inline-block;
+}
+
+.dashboard-card .user-info {
+  background-color: rgba(139, 92, 246, 0.1);
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid var(--primary-color);
+}
+
+.dashboard-card .user-info p {
+  margin: 0.5rem 0;
+  color: var(--text-light);
+  font-size: 0.9375rem;
+}
+
+.dashboard-card .user-info strong {
+  color: var(--text-white);
+}
+
+/* Events Page Styles */
+.events-header,
+.tickets-header {
+  margin-bottom: 2rem;
+}
+
+.events-header h1,
+.tickets-header h1 {
+  color: var(--text-white);
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.events-subtitle,
+.tickets-subtitle {
+  color: var(--text-muted);
+  font-size: 1.125rem;
+}
+
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.event-card {
+  overflow: hidden;
+}
+
+.event-image {
+  font-size: 4rem;
+  text-align: center;
+  padding: 2rem;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+}
+
+.event-details {
+  padding: 1.5rem;
+}
+
+.event-details h3 {
+  color: var(--text-white);
+  font-size: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.event-date,
+.event-location {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.event-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.event-price {
+  color: var(--primary-color);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+/* My Tickets Page */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.empty-icon {
+  font-size: 5rem;
+  margin-bottom: 1.5rem;
+}
+
+.empty-state h3 {
+  color: var(--text-white);
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.empty-state p {
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.tickets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ticket-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.ticket-details h3 {
+  color: var(--text-white);
+  margin-bottom: 0.5rem;
+}
+
+.ticket-date,
+.ticket-location {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+  .dashboard-welcome h1,
+  .events-header h1,
+  .tickets-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .events-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ticket-card {
+    flex-direction: column;
+    text-align: center;
+  }
+}
