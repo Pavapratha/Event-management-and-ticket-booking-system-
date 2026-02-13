@@ -41,6 +41,13 @@ const EyeOffIcon = () => (
   </svg>
 );
 
+const ArrowRightIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 12h14"/>
+    <path d="m12 5 7 7-7 7"/>
+  </svg>
+);
+
 export const Register = () => {
   const navigate = useNavigate();
   const { register, loading } = useAuth();
@@ -128,11 +135,10 @@ export const Register = () => {
         <div className="auth-card">
           <div className="auth-header">
             <div className="auth-logo">
-              <div className="auth-logo-icon">🎭</div>
-              <span className="auth-logo-text">Lycaon Entertainment</span>
+              <img src="/logo.png" alt="Logo" className="auth-logo-image" />
             </div>
             <h1>Create Account</h1>
-            <p>Join Lycaon Entertainment today</p>
+            <p>Join us today</p>
           </div>
 
           {success && <div className="alert alert-success">{success}</div>}
@@ -151,7 +157,7 @@ export const Register = () => {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  placeholder="Enter your full name"
+                  placeholder="John Doe"
                   className={`input-with-icon ${errors.name ? 'input-error' : ''}`}
                   disabled={loading}
                 />
@@ -171,7 +177,7 @@ export const Register = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="Enter your email"
+                  placeholder="you@example.com"
                   className={`input-with-icon ${errors.email ? 'input-error' : ''}`}
                   disabled={loading}
                 />
@@ -191,7 +197,7 @@ export const Register = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  placeholder="Create a password"
+                  placeholder="••••••••"
                   className={`input-with-icon input-with-right-icon ${errors.password ? 'input-error' : ''}`}
                   disabled={loading}
                 />
@@ -219,7 +225,7 @@ export const Register = () => {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  placeholder="Confirm your password"
+                  placeholder="••••••••"
                   className={`input-with-icon input-with-right-icon ${errors.confirmPassword ? 'input-error' : ''}`}
                   disabled={loading}
                 />
@@ -238,6 +244,7 @@ export const Register = () => {
             </div>
 
             <button type="submit" className="btn btn-primary" disabled={loading}>
+              <span className="btn-arrow"><ArrowRightIcon /></span>
               {loading ? 'Creating Account...' : 'Create Account'}
             </button>
           </form>
