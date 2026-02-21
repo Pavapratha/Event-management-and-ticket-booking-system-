@@ -9,10 +9,13 @@ export const ProtectedRoute = ({ children }) => {
   useEffect(() => {
     if (!user) {
       navigate('/login');
+    } else if (user.isVerified === false) {
+      // Unverified users should go back to verification
+      navigate('/resend-verification', { state: { email: user.email } });
     }
   }, [user, navigate]);
 
-  if (!user) {
+  if (!user || user.isVerified === false) {
     return <div>Loading...</div>;
   }
 

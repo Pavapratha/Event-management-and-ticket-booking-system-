@@ -4,51 +4,127 @@ import { AuthProvider } from './context/AuthContext';
 import { useAuth } from './hooks/useAuth';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
+import { EmailVerification } from './pages/EmailVerification';
+import { ResendVerification } from './pages/ResendVerification';
 import { Dashboard } from './pages/Dashboard';
 import { Events } from './pages/Events';
+import { Home } from './pages/Home';
 import { MyTickets } from './pages/MyTickets';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { Layout } from './components/Layout';
+import { Navbar } from './components/Navbar';
+import { Footer } from './components/Footer';
 import './styles/index.css';
+
+// Layout wrapper for public pages
+const PublicLayout = ({ children, showFooter = true }) => {
+  return (
+    <>
+      <Navbar />
+      <main>{children}</main>
+      {showFooter && <Footer />}
+    </>
+  );
+};
+
+// Layout wrapper for protected pages
+const ProtectedLayout = ({ children }) => {
+  return (
+    <>
+      <Navbar />
+      <main>{children}</main>
+    </>
+  );
+};
 
 const AppRoutes = () => {
   const { user } = useAuth();
 
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
-      <Route path="/register" element={user ? <Navigate to="/dashboard" /> : <Register />} />
+      {/* Public Routes */}
+      <Route 
+        path="/" 
+        element={
+          <PublicLayout>
+            <Home />
+          </PublicLayout>
+        } 
+      />
+      <Route 
+        path="/events" 
+        element={
+          <PublicLayout>
+            <Events />
+          </PublicLayout>
+        } 
+      />
+      
+      {/* Auth Routes (redirect if logged in) */}
+      <Route 
+        path="/login" 
+        element={
+          user ? <Navigate to="/dashboard" /> : (
+            <PublicLayout showFooter={false}>
+              <Login />
+            </PublicLayout>
+          )
+        } 
+      />
+      <Route 
+        path="/register" 
+        element={
+          user ? <Navigate to="/dashboard" /> : (
+            <PublicLayout showFooter={false}>
+              <Register />
+            </PublicLayout>
+          )
+        } 
+      />
+      <Route 
+        path="/verify-email" 
+        element={
+          <PublicLayout showFooter={false}>
+            <EmailVerification />
+          </PublicLayout>
+        }
+      />
+      <Route 
+        path="/resend-verification" 
+        element={
+          <PublicLayout showFooter={false}>
+            <ResendVerification />
+          </PublicLayout>
+        }
+      />
+      
+      {/* Protected Routes */}
       <Route
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <Layout>
+            <ProtectedLayout>
               <Dashboard />
-            </Layout>
+            </ProtectedLayout>
           </ProtectedRoute>
         }
       />
       <Route
-        path="/events"
+        path="/tickets"
         element={
           <ProtectedRoute>
-            <Layout>
-              <Events />
-            </Layout>
+            <ProtectedLayout>
+              <MyTickets />
+            </ProtectedLayout>
           </ProtectedRoute>
         }
       />
       <Route
         path="/my-tickets"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <MyTickets />
-            </Layout>
-          </ProtectedRoute>
-        }
+        element={<Navigate to="/tickets" />}
       />
-      <Route path="/" element={<Navigate to="/login" />} />
+      
+      {/* Catch all - redirect to home */}
+      <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
 };

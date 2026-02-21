@@ -51,6 +51,7 @@ export const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState('');
+  const [unverifiedEmail, setUnverifiedEmail] = useState(null);
 
   const validateForm = () => {
     const newErrors = {};
@@ -98,7 +99,14 @@ export const Login = () => {
         navigate('/dashboard');
       }, 1000);
     } else {
-      setErrors({ submit: result.error });
+      // Check if error is due to unverified email
+      if (result.error && result.error.includes('verify')) {
+        setUnverifiedEmail(formData.email);
+        setErrors({ submit: result.error });
+      } else {
+        setUnverifiedEmail(null);
+        setErrors({ submit: result.error });
+      }
     }
   };
 
@@ -115,7 +123,23 @@ export const Login = () => {
           </div>
 
           {success && <div className="alert alert-success">{success}</div>}
-          {errors.submit && <div className="alert alert-error">{errors.submit}</div>}
+          {errors.submit && (
+            <div className="alert alert-error">
+              <div>{errors.submit}</div>
+              {unverifiedEmail && (
+                <div style={{ marginTop: '10px', fontSize: '13px' }}>
+                  <Link 
+                    to="/resend-verification" 
+                    state={{ email: unverifiedEmail }}
+                    className="link" 
+                    style={{ display: 'inline-block', marginTop: '8px' }}
+                  >
+                    📧 Resend verification code
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="form-group">

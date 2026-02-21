@@ -18,9 +18,24 @@ export const AuthProvider = ({ children }) => {
         password,
         confirmPassword,
       });
+      
+      // For unverified registrations, don't auto-login
+      // The verification page will handle the verification process
+      if (response.data.requiresVerification) {
+        return { 
+          success: true, 
+          requiresVerification: true,
+          email: email.toLowerCase(),
+          message: response.data.message 
+        };
+      }
+      
+      // If somehow token is returned (shouldn't happen with email verification)
       const { token, user } = response.data;
-      localStorage.setItem('token', token);
-      setUser(user);
+      if (token) {
+        localStorage.setItem('token', token);
+        setUser(user);
+      }
       return { success: true, user };
     } catch (err) {
       const message = err.response?.data?.message || 'Registration failed';

@@ -6,8 +6,19 @@ const authRoutes = require('./routes/auth');
 
 const app = express();
 
+console.log('\n' + '='.repeat(60));
+console.log('🚀 Event Management Application Starting...');
+console.log('='.repeat(60));
+console.log('Mode:', process.env.NODE_ENV || 'development');
+console.log('Port:', process.env.PORT || 5000);
+
 // Connect to database
+console.log('\n📦 Connecting to database...');
 connectDB();
+
+// Import and verify email configuration
+console.log('\n📧 Loading email configuration...');
+require('./config/email');  // This will log verification results
 
 // Middleware
 app.use(express.json());
