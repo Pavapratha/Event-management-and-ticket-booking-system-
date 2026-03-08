@@ -82,17 +82,7 @@ export const Footer = () => {
             <div className="footer-brand">
               <Link to="/" className="footer-logo">
                 <div className="logo-icon">
-                  <svg width="36" height="36" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect width="32" height="32" rx="8" fill="url(#footer-logo-gradient)"/>
-                    <path d="M16 8L22 12V20L16 24L10 20V12L16 8Z" stroke="white" strokeWidth="2" fill="none"/>
-                    <circle cx="16" cy="16" r="3" fill="white"/>
-                    <defs>
-                      <linearGradient id="footer-logo-gradient" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-                        <stop stopColor="#9333ea"/>
-                        <stop offset="1" stopColor="#c084fc"/>
-                      </linearGradient>
-                    </defs>
-                  </svg>
+                  <img src="/logo.png" alt="Logo" width="36" height="36" style={{ borderRadius: '8px', objectFit: 'contain' }} />
                 </div>
                 <span className="logo-text">Lycaon</span>
               </Link>

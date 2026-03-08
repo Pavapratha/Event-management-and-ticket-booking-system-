@@ -2,7 +2,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--bg-dark);
+  background: #ffffff;
 }
 
 .layout-main {
@@ -25,7 +25,7 @@
 }
 
 .section-dark {
-  background: var(--bg-dark-secondary);
+  background: #fff7ed;
 }
 
 .section-container {
@@ -57,7 +57,7 @@
 .page-header h1 {
   font-size: 2rem;
   font-weight: 700;
-  color: var(--text-white);
+  color: var(--text-light);
   margin-bottom: 0.5rem;
   letter-spacing: -0.5px;
 }

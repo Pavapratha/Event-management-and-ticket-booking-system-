@@ -1,78 +1,79 @@
 /* ============================================
    LYCAON EVENT MANAGEMENT - GLOBAL STYLES
-   Modern Dark Theme with Purple Accents
+   White & Orange Theme
    ============================================ */
 
 /* Design Tokens / CSS Variables */
 :root {
-  /* Primary Colors - Purple/Violet Theme */
-  --primary-50: #faf5ff;
-  --primary-100: #f3e8ff;
-  --primary-200: #e9d5ff;
-  --primary-300: #d8b4fe;
-  --primary-400: #c084fc;
-  --primary-500: #a855f7;
-  --primary-600: #9333ea;
-  --primary-700: #7e22ce;
-  --primary-800: #6b21a8;
-  --primary-900: #581c87;
+  /* Primary Colors - Orange Theme */
+  --primary-50: #fff7ed;
+  --primary-100: #ffedd5;
+  --primary-200: #fed7aa;
+  --primary-300: #fdba74;
+  --primary-400: #fb923c;
+  --primary-500: #f97316;
+  --primary-600: #ea580c;
+  --primary-700: #c2410c;
+  --primary-800: #9a3412;
+  --primary-900: #7c2d12;
   
-  --primary-color: #a855f7;
-  --primary-dark: #9333ea;
-  --primary-light: #c084fc;
-  --primary-gradient: linear-gradient(135deg, #9333ea 0%, #a855f7 50%, #c084fc 100%);
-  --primary-gradient-hover: linear-gradient(135deg, #7e22ce 0%, #9333ea 50%, #a855f7 100%);
+  --primary-color: #f97316;
+  --primary-dark: #ea580c;
+  --primary-light: #fb923c;
+  --primary-gradient: linear-gradient(135deg, #ea580c 0%, #f97316 50%, #fb923c 100%);
+  --primary-gradient-hover: linear-gradient(135deg, #c2410c 0%, #ea580c 50%, #f97316 100%);
   
-  /* Secondary - Orange Accent */
+  /* Secondary - Orange variants */
   --secondary-color: #f97316;
   --secondary-light: #fb923c;
   --secondary-dark: #ea580c;
   --secondary-gradient: linear-gradient(135deg, #ea580c 0%, #f97316 50%, #fb923c 100%);
   
-  /* Dark Theme Colors */
-  --bg-dark: #0f172a;
-  --bg-dark-secondary: #1e293b;
-  --bg-dark-tertiary: #334155;
-  --bg-card: rgba(30, 41, 59, 0.8);
-  --bg-card-solid: #1e293b;
-  --bg-card-hover: #2d3a4f;
-  --bg-overlay: rgba(15, 23, 42, 0.9);
+  /* Light Theme Colors */
+  --bg-dark: #ffffff;
+  --bg-dark-secondary: #fff7ed;
+  --bg-dark-tertiary: #ffedd5;
+  --bg-card: rgba(255, 255, 255, 0.95);
+  --bg-card-solid: #ffffff;
+  --bg-card-hover: #fff7ed;
+  --bg-overlay: rgba(255, 255, 255, 0.92);
+  --card-bg: #ffffff;
   
   /* Glass Effect */
-  --glass-bg: rgba(30, 41, 59, 0.6);
-  --glass-border: rgba(148, 163, 184, 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(249, 115, 22, 0.2);
   
   /* Text Colors */
   --text-white: #ffffff;
-  --text-light: #f1f5f9;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
-  --text-dark: #64748b;
+  --text-light: #1c1917;
+  --text-secondary: #57534e;
+  --text-muted: #78716c;
+  --text-dark: #a8a29e;
   
   /* Status Colors */
-  --success-color: #22c55e;
-  --success-light: #4ade80;
-  --success-dark: #16a34a;
-  --error-color: #ef4444;
-  --error-light: #f87171;
-  --warning-color: #f59e0b;
-  --warning-light: #fbbf24;
-  --info-color: #3b82f6;
-  --info-light: #60a5fa;
+  --success-color: #16a34a;
+  --success-light: #22c55e;
+  --success-dark: #15803d;
+  --error-color: #dc2626;
+  --error-light: #ef4444;
+  --warning-color: #d97706;
+  --warning-light: #f59e0b;
+  --info-color: #2563eb;
+  --info-light: #3b82f6;
   
   /* Border & Shadow */
-  --border-color: rgba(51, 65, 85, 0.8);
-  --border-light: rgba(71, 85, 105, 0.8);
+  --border-color: #e7e5e4;
+  --border-light: #d6d3d1;
   --border-focus: var(--primary-500);
   
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  --shadow-glow: 0 0 20px rgba(168, 85, 247, 0.4);
-  --shadow-glow-lg: 0 0 40px rgba(168, 85, 247, 0.3);
-  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.12);
+  --shadow-glow: 0 0 20px rgba(249, 115, 22, 0.3);
+  --shadow-glow-lg: 0 0 40px rgba(249, 115, 22, 0.2);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.08);
   
   /* Border Radius */
   --radius-xs: 4px;
@@ -163,7 +164,7 @@ body {
   font-size: var(--text-base);
   line-height: var(--leading-relaxed);
   color: var(--text-light);
-  background-color: var(--bg-dark);
+  background-color: #ffffff;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
@@ -213,7 +214,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
   font-weight: 700;
   line-height: var(--leading-tight);
-  color: var(--text-white);
+  color: var(--text-light);
 }
 
 p {
@@ -230,29 +231,29 @@ p {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-dark);
+  background: #f5f5f4;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--bg-dark-tertiary);
+  background: #d6d3d1;
   border-radius: var(--radius-full);
-  border: 2px solid var(--bg-dark);
+  border: 2px solid #f5f5f4;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--border-light);
+  background: var(--primary-400);
 }
 
 /* Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--bg-dark-tertiary) var(--bg-dark);
+  scrollbar-color: #d6d3d1 #f5f5f4;
 }
 
 /* Selection */
 ::selection {
-  background: var(--primary-600);
-  color: var(--text-white);
+  background: var(--primary-400);
+  color: #ffffff;
 }
 
 /* ============================================
@@ -359,13 +360,13 @@ p {
 
 .btn-primary {
   background: var(--primary-gradient);
-  color: var(--text-white);
-  box-shadow: 0 4px 14px rgba(147, 51, 234, 0.4);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.35);
 }
 
 .btn-primary:hover:not(:disabled) {
   background: var(--primary-gradient-hover);
-  box-shadow: 0 6px 20px rgba(147, 51, 234, 0.5);
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.45);
   transform: translateY(-2px);
 }
 
@@ -386,14 +387,14 @@ p {
 
 .btn-outline {
   background: transparent;
-  color: var(--text-light);
-  border: 1px solid var(--border-light);
+  color: var(--primary-600);
+  border: 1.5px solid var(--primary-400);
 }
 
 .btn-outline:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: var(--text-muted);
-  color: var(--text-white);
+  background: var(--primary-50);
+  border-color: var(--primary-600);
+  color: var(--primary-700);
 }
 
 .btn-ghost {
@@ -402,8 +403,8 @@ p {
 }
 
 .btn-ghost:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-white);
+  background: var(--primary-50);
+  color: var(--primary-600);
 }
 
 .btn-icon {
@@ -447,8 +448,8 @@ p {
 .form-textarea {
   width: 100%;
   padding: 0.875rem 1rem;
-  background: var(--bg-dark);
-  border: 1px solid var(--border-color);
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
   border-radius: var(--radius-lg);
   font-size: var(--text-base);
   color: var(--text-light);
@@ -465,7 +466,7 @@ p {
 .form-textarea:focus {
   outline: none;
   border-color: var(--primary-500);
-  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
 }
 
 .form-input:disabled,
@@ -548,8 +549,8 @@ p {
 }
 
 .badge-primary {
-  background: rgba(168, 85, 247, 0.15);
-  color: var(--primary-400);
+  background: rgba(249, 115, 22, 0.12);
+  color: var(--primary-600);
 }
 
 .badge-secondary {
@@ -625,12 +626,12 @@ p {
    ============================================ */
 
 .link {
-  color: var(--primary-400);
+  color: var(--primary-600);
   transition: color var(--transition-fast);
 }
 
 .link:hover {
-  color: var(--primary-300);
+  color: var(--primary-700);
   text-decoration: underline;
 }
 
@@ -641,9 +642,9 @@ p {
 .skeleton {
   background: linear-gradient(
     90deg,
-    var(--bg-dark-secondary) 25%,
-    var(--bg-dark-tertiary) 50%,
-    var(--bg-dark-secondary) 75%
+    #f5f5f4 25%,
+    #e7e5e4 50%,
+    #f5f5f4 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
@@ -747,10 +748,10 @@ p {
 
 @keyframes glow {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.3);
   }
   50% {
-    box-shadow: 0 0 40px rgba(168, 85, 247, 0.5);
+    box-shadow: 0 0 40px rgba(249, 115, 22, 0.5);
   }
 }
 

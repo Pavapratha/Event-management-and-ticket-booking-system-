@@ -129,7 +129,7 @@ const upcomingEvents = [
 ];
 
 const categories = [
-  { name: 'Concerts', icon: MusicIcon, count: 245, color: '#a855f7' },
+  { name: 'Concerts', icon: MusicIcon, count: 245, color: '#ec4899' },
   { name: 'Festivals', icon: PartyPopperIcon, count: 89, color: '#f97316' },
   { name: 'Conferences', icon: GraduationCapIcon, count: 156, color: '#3b82f6' },
   { name: 'Exhibitions', icon: CameraIcon, count: 78, color: '#22c55e' },

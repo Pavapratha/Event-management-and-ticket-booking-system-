@@ -37,7 +37,7 @@ function Login() {
     <div className="login-page">
       <div className="login-left">
         <div className="login-brand">
-          <span className="brand-icon">🎫</span>
+          <img src="/logo.png" alt="Logo" style={{ width: '56px', height: '56px', borderRadius: '10px', objectFit: 'contain', marginBottom: '16px', display: 'block' }} />
           <h1>EventAdmin</h1>
           <p>Manage your events with ease.</p>
         </div>
@@ -65,7 +65,7 @@ function Login() {
         <div className="login-card">
           <div className="login-header">
             <div className="login-logo">
-              <span>🔐</span>
+              <img src="/logo.png" alt="Logo" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
             </div>
             <h2>Admin Login</h2>
             <p>Sign in to access the admin panel</p>
