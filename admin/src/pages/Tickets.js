@@ -199,7 +199,7 @@ function Tickets() {
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button
                           className="btn btn-sm btn-outline"
-                          onClick={() => navigate(`/bookings/${booking._id}`)}
+                          onClick={() => navigate(`/admin/bookings/${booking._id}`)}
                           title="View Details"
                         >
                           👁️

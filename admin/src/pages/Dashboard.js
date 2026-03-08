@@ -7,7 +7,7 @@ import {
 import api from '../services/api';
 import './Dashboard.css';
 
-const COLORS = ['#ff6b00', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+const COLORS = ['#FF7A00', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 function StatCard({ icon, label, value, color, bg }) {
   return (
@@ -90,7 +90,7 @@ function Dashboard() {
 
       {/* Stats */}
       <div className="stats-grid">
-        <StatCard icon="🎪" label="Total Events" value={stats?.totalEvents || 0} color="#ff6b00" bg="#fff3e8" />
+        <StatCard icon="🎪" label="Total Events" value={stats?.totalEvents || 0} color="#FF7A00" bg="#fff4e8" />
         <StatCard icon="👥" label="Total Users" value={stats?.totalUsers || 0} color="#3b82f6" bg="#dbeafe" />
         <StatCard icon="🎟️" label="Total Bookings" value={stats?.totalBookings || 0} color="#10b981" bg="#d1fae5" />
         <StatCard icon="📦" label="Tickets Sold" value={stats?.ticketsSold || 0} color="#f59e0b" bg="#fef3c7" />
@@ -112,7 +112,7 @@ function Dashboard() {
                   <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip formatter={(v) => formatCurrency(v)} />
-                  <Bar dataKey="revenue" fill="#ff6b00" radius={[4, 4, 0, 0]} name="Revenue" />
+                  <Bar dataKey="revenue" fill="#FF7A00" radius={[4, 4, 0, 0]} name="Revenue" />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -157,7 +157,7 @@ function Dashboard() {
         <div className="card">
           <div className="card-header">
             <span className="card-title">Recent Bookings</span>
-            <Link to="/bookings" className="btn btn-sm btn-outline">View All</Link>
+            <Link to="/admin/bookings" className="btn btn-sm btn-outline">View All</Link>
           </div>
           <div className="table-container">
             {recentBookings && recentBookings.length > 0 ? (
@@ -208,7 +208,7 @@ function Dashboard() {
         <div className="card upcoming-card">
           <div className="card-header">
             <span className="card-title">Upcoming Events</span>
-            <Link to="/events" className="btn btn-sm btn-outline">View All</Link>
+            <Link to="/admin/events" className="btn btn-sm btn-outline">View All</Link>
           </div>
           <div className="card-body upcoming-list">
             {upcomingEvents && upcomingEvents.length > 0 ? (

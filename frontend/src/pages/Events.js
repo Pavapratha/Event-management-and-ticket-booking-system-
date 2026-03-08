@@ -1,184 +1,98 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import api from '../services/api';
 import { EventCard, EventCardSkeleton } from '../components/EventCard';
 import { 
   SearchIcon, 
   FilterIcon, 
   GridIcon, 
   ListIcon, 
-  CalendarIcon,
   MapPinIcon,
   ChevronDownIcon,
   XIcon
 } from '../components/Icons';
 import './Events.css';
 
-// Sample events data
-const allEvents = [
-  {
-    id: 1,
-    title: 'Summer Music Festival 2026',
-    date: 'August 15-17, 2026',
-    time: '4:00 PM',
-    location: 'Los Angeles',
-    venue: 'Sunset Beach Arena',
-    image: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=600&h=400&fit=crop',
-    price: '$149',
-    originalPrice: '$199',
-    category: 'Music',
-    attendees: 1250,
-    spotsLeft: 45,
-    isHot: true,
-  },
-  {
-    id: 2,
-    title: 'Tech Innovation Summit',
-    date: 'September 20, 2026',
-    time: '9:00 AM',
-    location: 'San Francisco',
-    venue: 'Moscone Center',
-    image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&h=400&fit=crop',
-    price: '$299',
-    category: 'Conference',
-    attendees: 850,
-    spotsLeft: 120,
-  },
-  {
-    id: 3,
-    title: 'Art & Design Exhibition',
-    date: 'October 5, 2026',
-    time: '10:00 AM',
-    location: 'New York',
-    venue: 'Metropolitan Gallery',
-    image: 'https://images.unsplash.com/photo-1531058020387-3be344556be6?w=600&h=400&fit=crop',
-    price: '$45',
-    category: 'Art',
-    attendees: 420,
-  },
-  {
-    id: 4,
-    title: 'Comedy Night Live',
-    date: 'October 12, 2026',
-    time: '8:00 PM',
-    location: 'Chicago',
-    venue: 'Laugh Factory',
-    image: 'https://images.unsplash.com/photo-1585699324551-f6c309eedeca?w=600&h=400&fit=crop',
-    price: '$35',
-    category: 'Comedy',
-    attendees: 180,
-    isHot: true,
-  },
-  {
-    id: 5,
-    title: 'Jazz Night at Blue Note',
-    date: 'March 15, 2026',
-    time: '7:30 PM',
-    location: 'New York',
-    venue: 'Blue Note Jazz Club',
-    image: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=600&h=400&fit=crop',
-    price: '$65',
-    category: 'Music',
-  },
-  {
-    id: 6,
-    title: 'Startup Pitch Competition',
-    date: 'March 22, 2026',
-    time: '2:00 PM',
-    location: 'Austin',
-    venue: 'Capital Factory',
-    image: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=600&h=400&fit=crop',
-    price: 'Free',
-    category: 'Business',
-  },
-  {
-    id: 7,
-    title: 'Food & Wine Festival',
-    date: 'April 8, 2026',
-    time: '12:00 PM',
-    location: 'Napa Valley',
-    venue: 'Vineyard Estate',
-    image: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=600&h=400&fit=crop',
-    price: '$85',
-    category: 'Food',
-    isHot: true,
-  },
-  {
-    id: 8,
-    title: 'Electronic Music Rave',
-    date: 'April 15, 2026',
-    time: '10:00 PM',
-    location: 'Miami',
-    venue: 'Warehouse District',
-    image: 'https://images.unsplash.com/photo-1571266028243-e4733b0f0bb0?w=600&h=400&fit=crop',
-    price: '$75',
-    category: 'Music',
-  },
-  {
-    id: 9,
-    title: 'Photography Workshop',
-    date: 'May 5, 2026',
-    time: '10:00 AM',
-    location: 'Seattle',
-    venue: 'Creative Studio',
-    image: 'https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=600&h=400&fit=crop',
-    price: '$120',
-    category: 'Workshop',
-  },
-  {
-    id: 10,
-    title: 'Rock Concert Night',
-    date: 'May 20, 2026',
-    time: '8:00 PM',
-    location: 'Las Vegas',
-    venue: 'The Arena',
-    image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&h=400&fit=crop',
-    price: '$95',
-    category: 'Music',
-    isHot: true,
-  },
-  {
-    id: 11,
-    title: 'Yoga & Wellness Retreat',
-    date: 'June 1-3, 2026',
-    time: '7:00 AM',
-    location: 'Sedona',
-    venue: 'Mountain Retreat Center',
-    image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600&h=400&fit=crop',
-    price: '$350',
-    category: 'Wellness',
-  },
-  {
-    id: 12,
-    title: 'Gaming Convention 2026',
-    date: 'June 15-17, 2026',
-    time: '10:00 AM',
-    location: 'Los Angeles',
-    venue: 'Convention Center',
-    image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&h=400&fit=crop',
-    price: '$89',
-    category: 'Gaming',
-    isHot: true,
-  },
-];
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-const categories = ['All', 'Music', 'Conference', 'Art', 'Comedy', 'Business', 'Food', 'Workshop', 'Wellness', 'Gaming'];
-const locations = ['All Locations', 'Los Angeles', 'San Francisco', 'New York', 'Chicago', 'Austin', 'Miami', 'Seattle', 'Las Vegas', 'Sedona'];
+const defaultCategories = ['All', 'Music', 'Sports', 'Technology', 'Food & Drink', 'Arts', 'Business', 'Education', 'Other'];
 const sortOptions = [
   { value: 'date', label: 'Date' },
   { value: 'price-low', label: 'Price: Low to High' },
   { value: 'price-high', label: 'Price: High to Low' },
-  { value: 'popular', label: 'Most Popular' },
 ];
+
+// Transform database event to EventCard format
+const transformEvent = (event) => {
+  const dateObj = new Date(event.date);
+  const formattedDate = dateObj.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const spotsLeft = event.availableSeats;
+  const totalSeats = event.totalSeats;
+  const soldSeats = totalSeats - spotsLeft;
+
+  return {
+    id: event._id,
+    title: event.title,
+    date: formattedDate,
+    time: event.time,
+    location: event.location,
+    venue: event.location,
+    image: event.image ? `${API_BASE}${event.image}` : null,
+    price: event.price === 0 ? 'Free' : `$${event.price}`,
+    priceNum: event.price,
+    category: event.category,
+    spotsLeft,
+    attendees: soldSeats,
+    isHot: spotsLeft < 20 && spotsLeft > 0,
+    _raw: event,
+  };
+};
 
 export const Events = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [allEvents, setAllEvents] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'All');
   const [selectedLocation, setSelectedLocation] = useState('All Locations');
   const [sortBy, setSortBy] = useState('date');
   const [viewMode, setViewMode] = useState('grid');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+
+  // Fetch events from API
+  useEffect(() => {
+    const fetchEvents = async () => {
+      setIsLoading(true);
+      try {
+        const res = await api.get('/api/events');
+        const events = (res.data.events || []).map(transformEvent);
+        setAllEvents(events);
+      } catch (err) {
+        console.error('Failed to fetch events:', err);
+        setAllEvents([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchEvents();
+  }, []);
+
+  // Derive unique locations from fetched events
+  const locations = useMemo(() => {
+    const locs = ['All Locations', ...new Set(allEvents.map((e) => e.location))];
+    return locs;
+  }, [allEvents]);
+
+  // Derive unique categories from fetched events (merged with defaults)
+  const categories = useMemo(() => {
+    const eventCats = new Set(allEvents.map((e) => e.category));
+    const merged = new Set([...defaultCategories, ...eventCats]);
+    return Array.from(merged);
+  }, [allEvents]);
 
   // Filter and sort events
   const filteredEvents = useMemo(() => {
@@ -210,29 +124,19 @@ export const Events = () => {
     // Sort events
     switch (sortBy) {
       case 'price-low':
-        events.sort((a, b) => {
-          const priceA = parseInt(a.price.replace(/[^0-9]/g, '')) || 0;
-          const priceB = parseInt(b.price.replace(/[^0-9]/g, '')) || 0;
-          return priceA - priceB;
-        });
+        events.sort((a, b) => (a.priceNum || 0) - (b.priceNum || 0));
         break;
       case 'price-high':
-        events.sort((a, b) => {
-          const priceA = parseInt(a.price.replace(/[^0-9]/g, '')) || 0;
-          const priceB = parseInt(b.price.replace(/[^0-9]/g, '')) || 0;
-          return priceB - priceA;
-        });
-        break;
-      case 'popular':
-        events.sort((a, b) => (b.attendees || 0) - (a.attendees || 0));
+        events.sort((a, b) => (b.priceNum || 0) - (a.priceNum || 0));
         break;
       default:
-        // Sort by date (default)
+        // Sort by date (ascending - upcoming first)
+        events.sort((a, b) => new Date(a._raw.date) - new Date(b._raw.date));
         break;
     }
 
     return events;
-  }, [searchQuery, selectedCategory, selectedLocation, sortBy]);
+  }, [allEvents, searchQuery, selectedCategory, selectedLocation, sortBy]);
 
   const handleCategoryChange = (category) => {
     setSelectedCategory(category);

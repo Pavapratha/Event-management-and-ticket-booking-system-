@@ -21,7 +21,7 @@ function BookingDetails() {
         setBooking(res.data.booking);
       } catch (err) {
         console.error(err);
-        navigate('/bookings');
+        navigate('/admin/bookings');
       } finally {
         setLoading(false);
       }
@@ -148,7 +148,7 @@ function BookingDetails() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button className="btn btn-secondary" onClick={() => navigate('/bookings')}>← Back</button>
+          <button className="btn btn-secondary" onClick={() => navigate('/admin/bookings')}>← Back</button>
           <button className="btn btn-primary" onClick={generateInvoice}>📄 Download Invoice</button>
           {booking.status !== 'cancelled' && (
             <button className="btn btn-danger" onClick={handleCancel}>Cancel Booking</button>

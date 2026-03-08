@@ -17,7 +17,7 @@ function EditEvent() {
         setEvent(res.data.event);
       } catch (err) {
         console.error(err);
-        navigate('/events');
+        navigate('/admin/events');
       } finally {
         setFetchLoading(false);
       }
@@ -31,7 +31,7 @@ function EditEvent() {
       await api.put(`/api/admin/events/${id}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      navigate('/events');
+      navigate('/admin/events');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update event');
     } finally {
@@ -48,7 +48,7 @@ function EditEvent() {
           <h1 className="page-title">Edit Event</h1>
           <p className="page-subtitle">{event?.title}</p>
         </div>
-        <button className="btn btn-secondary" onClick={() => navigate('/events')}>
+        <button className="btn btn-secondary" onClick={() => navigate('/admin/events')}>
           ← Back
         </button>
       </div>

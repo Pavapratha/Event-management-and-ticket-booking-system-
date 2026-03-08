@@ -149,7 +149,7 @@ function AddEvent() {
       await api.post('/api/admin/events', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      navigate('/events');
+      navigate('/admin/events');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create event');
     } finally {
@@ -164,7 +164,7 @@ function AddEvent() {
           <h1 className="page-title">Add New Event</h1>
           <p className="page-subtitle">Create a new event for your platform</p>
         </div>
-        <button className="btn btn-secondary" onClick={() => navigate('/events')}>
+        <button className="btn btn-secondary" onClick={() => navigate('/admin/events')}>
           ← Back
         </button>
       </div>

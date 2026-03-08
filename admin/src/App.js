@@ -31,15 +31,16 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
           <Route
-            path="/"
+            path="/admin"
             element={
               <ProtectedRoute>
                 <AdminLayout />
               </ProtectedRoute>
             }
           >
-            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="events" element={<Events />} />
             <Route path="events/add" element={<AddEvent />} />
@@ -55,7 +56,7 @@ function App() {
             <Route path="notifications" element={<Notifications />} />
             <Route path="settings" element={<Settings />} />
           </Route>
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

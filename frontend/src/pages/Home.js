@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../services/api';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { HeroSection } from '../components/HeroSection';
-import { EventCard } from '../components/EventCard';
+import { EventCard, EventCardSkeleton } from '../components/EventCard';
 import { 
   ArrowRightIcon, 
   MusicIcon, 
@@ -20,113 +21,36 @@ import {
 } from '../components/Icons';
 import './Home.css';
 
-// Sample events data
-const featuredEvents = [
-  {
-    id: 1,
-    title: 'Summer Music Festival 2026',
-    date: 'August 15-17, 2026',
-    time: '4:00 PM',
-    location: 'Los Angeles',
-    venue: 'Sunset Beach Arena',
-    image: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=600&h=400&fit=crop',
-    price: '$149',
-    originalPrice: '$199',
-    category: 'Music',
-    attendees: 1250,
-    spotsLeft: 45,
-    isHot: true,
-    isFeatured: true,
-  },
-  {
-    id: 2,
-    title: 'Tech Innovation Summit',
-    date: 'September 20, 2026',
-    time: '9:00 AM',
-    location: 'San Francisco',
-    venue: 'Moscone Center',
-    image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&h=400&fit=crop',
-    price: '$299',
-    category: 'Conference',
-    attendees: 850,
-    spotsLeft: 120,
-    isFeatured: true,
-  },
-  {
-    id: 3,
-    title: 'Art & Design Exhibition',
-    date: 'October 5, 2026',
-    time: '10:00 AM',
-    location: 'New York',
-    venue: 'Metropolitan Gallery',
-    image: 'https://images.unsplash.com/photo-1531058020387-3be344556be6?w=600&h=400&fit=crop',
-    price: '$45',
-    category: 'Art',
-    attendees: 420,
-    isFeatured: true,
-  },
-  {
-    id: 4,
-    title: 'Comedy Night Live',
-    date: 'October 12, 2026',
-    time: '8:00 PM',
-    location: 'Chicago',
-    venue: 'Laugh Factory',
-    image: 'https://images.unsplash.com/photo-1585699324551-f6c309eedeca?w=600&h=400&fit=crop',
-    price: '$35',
-    category: 'Comedy',
-    attendees: 180,
-    isHot: true,
-  },
-];
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-const upcomingEvents = [
-  {
-    id: 5,
-    title: 'Jazz Night at Blue Note',
-    date: 'March 15, 2026',
-    time: '7:30 PM',
-    location: 'New York',
-    venue: 'Blue Note Jazz Club',
-    image: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=600&h=400&fit=crop',
-    price: '$65',
-    category: 'Music',
-  },
-  {
-    id: 6,
-    title: 'Startup Pitch Competition',
-    date: 'March 22, 2026',
-    time: '2:00 PM',
-    location: 'Austin',
-    venue: 'Capital Factory',
-    image: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=600&h=400&fit=crop',
-    price: 'Free',
-    category: 'Business',
-  },
-  {
-    id: 7,
-    title: 'Food & Wine Festival',
-    date: 'April 8, 2026',
-    time: '12:00 PM',
-    location: 'Napa Valley',
-    venue: 'Vineyard Estate',
-    image: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=600&h=400&fit=crop',
-    price: '$85',
-    category: 'Food',
-    isHot: true,
-  },
-  {
-    id: 8,
-    title: 'Electronic Music Rave',
-    date: 'April 15, 2026',
-    time: '10:00 PM',
-    location: 'Miami',
-    venue: 'Warehouse District',
-    image: 'https://images.unsplash.com/photo-1571266028243-e4733b0f0bb0?w=600&h=400&fit=crop',
-    price: '$75',
-    category: 'Music',
-  },
-];
+// Transform database event to EventCard format
+const transformEvent = (event, isFeatured = false) => {
+  const dateObj = new Date(event.date);
+  const formattedDate = dateObj.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const spotsLeft = event.availableSeats;
+  const totalSeats = event.totalSeats;
+  const soldSeats = totalSeats - spotsLeft;
+
+  return {
+    id: event._id,
+    title: event.title,
+    date: formattedDate,
+    time: event.time,
+    location: event.location,
+    venue: event.location,
+    image: event.image ? `${API_BASE}${event.image}` : null,
+    price: event.price === 0 ? 'Free' : `$${event.price}`,
+    category: event.category,
+    spotsLeft,
+    attendees: soldSeats,
+    isHot: spotsLeft < 20 && spotsLeft > 0,
+    isFeatured,
+  };
+};
 
 const categories = [
   { name: 'Concerts', icon: MusicIcon, count: 245, color: '#ec4899' },
@@ -193,6 +117,31 @@ const stats = [
 ];
 
 export const Home = () => {
+  const [featuredEvents, setFeaturedEvents] = useState([]);
+  const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const res = await api.get('/api/events');
+        const events = res.data.events || [];
+        // Sort by date ascending (upcoming first)
+        const sorted = events.sort((a, b) => new Date(a.date) - new Date(b.date));
+        // First 4 as featured, next 4 as upcoming
+        const featured = sorted.slice(0, 4).map((e) => transformEvent(e, true));
+        const upcoming = sorted.slice(4, 8).map((e) => transformEvent(e, false));
+        setFeaturedEvents(featured);
+        setUpcomingEvents(upcoming);
+      } catch (err) {
+        console.error('Failed to fetch events:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEvents();
+  }, []);
+
   return (
     <div className="home-page">
       <Navbar />
@@ -250,9 +199,17 @@ export const Home = () => {
           </div>
           
           <div className="events-grid events-grid-featured">
-            {featuredEvents.map((event) => (
-              <EventCard key={event.id} event={event} variant="featured" />
-            ))}
+            {loading ? (
+              [...Array(4)].map((_, i) => <EventCardSkeleton key={i} variant="featured" />)
+            ) : featuredEvents.length > 0 ? (
+              featuredEvents.map((event) => (
+                <EventCard key={event.id} event={event} variant="featured" />
+              ))
+            ) : (
+              <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--text-muted)' }}>
+                No featured events yet. Check back soon!
+              </p>
+            )}
           </div>
         </div>
       </section>
@@ -297,9 +254,17 @@ export const Home = () => {
           </div>
           
           <div className="events-grid">
-            {upcomingEvents.map((event) => (
-              <EventCard key={event.id} event={event} />
-            ))}
+            {loading ? (
+              [...Array(4)].map((_, i) => <EventCardSkeleton key={i} />)
+            ) : upcomingEvents.length > 0 ? (
+              upcomingEvents.map((event) => (
+                <EventCard key={event.id} event={event} />
+              ))
+            ) : (
+              <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--text-muted)' }}>
+                No upcoming events yet.
+              </p>
+            )}
           </div>
         </div>
       </section>

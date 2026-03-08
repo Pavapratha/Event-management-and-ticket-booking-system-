@@ -57,7 +57,7 @@ function Events() {
           <h1 className="page-title">Manage Events</h1>
           <p className="page-subtitle">{events.length} events total</p>
         </div>
-        <Link to="/events/add" className="btn btn-primary">
+        <Link to="/admin/events/add" className="btn btn-primary">
           + Add New Event
         </Link>
       </div>
@@ -80,7 +80,7 @@ function Events() {
               <div className="empty-state-icon">🎪</div>
               <div className="empty-state-text">No events found</div>
               <div className="empty-state-hint">
-                <Link to="/events/add" className="btn btn-primary btn-sm" style={{ marginTop: 12 }}>
+                <Link to="/admin/events/add" className="btn btn-primary btn-sm" style={{ marginTop: 12 }}>
                   Create your first event
                 </Link>
               </div>
@@ -145,7 +145,7 @@ function Events() {
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button
                           className="btn btn-sm btn-outline"
-                          onClick={() => navigate(`/events/edit/${event._id}`)}
+                          onClick={() => navigate(`/admin/events/edit/${event._id}`)}
                           title="Edit"
                         >
                           ✏️
