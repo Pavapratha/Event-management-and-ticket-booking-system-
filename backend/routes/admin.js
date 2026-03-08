@@ -33,7 +33,7 @@ const {
   cancelBooking,
   updateBookingStatus,
 } = require('../controllers/bookingController');
-const { getDashboardStats, getReports } = require('../controllers/reportController');
+const { getDashboardStats, getReports, getEventReportData, downloadEventCSV, downloadEventPDF } = require('../controllers/reportController');
 const {
   getAllNotifications,
   createNotification,
@@ -58,6 +58,8 @@ router.get('/events/:id', adminProtect, getEventById);
 router.post('/events', adminProtect, upload.single('image'), createEvent);
 router.put('/events/:id', adminProtect, upload.single('image'), updateEvent);
 router.delete('/events/:id', adminProtect, deleteEvent);
+router.get('/events/:id/download-csv', adminProtect, downloadEventCSV);
+router.get('/events/:id/download-pdf', adminProtect, downloadEventPDF);
 
 // Bookings / Tickets
 router.get('/bookings', adminProtect, getAllBookings);

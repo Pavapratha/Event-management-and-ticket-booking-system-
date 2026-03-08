@@ -1,6 +1,7 @@
 const Event = require('../models/Event');
 const Booking = require('../models/Booking');
 const User = require('../models/User');
+const { displayReportPrice } = require('../utils/currency');
 
 // @desc    Get dashboard stats
 // @route   GET /api/admin/dashboard
@@ -152,6 +153,212 @@ exports.getReports = async (req, res) => {
       statusBreakdown,
       categoryBreakdown,
     });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// @desc    Get event details for report
+// @route   GET /api/admin/events/:id/report-data
+// @access  Admin
+exports.getEventReportData = async (req, res) => {
+  try {
+    const event = await Event.findById(req.params.id);
+    if (!event) {
+      return res.status(404).json({ success: false, message: 'Event not found' });
+    }
+
+    // Get booking stats for this event
+    const bookings = await Booking.find({ eventId: event._id }).populate('userId', 'name email');
+    const confirmedBookings = bookings.filter(b => b.status !== 'cancelled');
+    
+    const ticketsSold = confirmedBookings.reduce((sum, b) => sum + b.ticketQuantity, 0);
+    const revenue = confirmedBookings.reduce((sum, b) => sum + b.totalAmount, 0);
+    const ticketsAvailable = event.totalSeats - ticketsSold;
+
+    const reportData = {
+      eventName: event.title,
+      eventDate: event.date,
+      eventTime: event.time,
+      eventLocation: event.location,
+      eventCategory: event.category,
+      eventDescription: event.description,
+      ticketPrice: event.price,
+      totalSeats: event.totalSeats,
+      ticketsSold,
+      ticketsAvailable,
+      totalRevenue: revenue,
+      occupancyRate: ((ticketsSold / event.totalSeats) * 100).toFixed(2),
+      bookings: confirmedBookings.map(b => ({
+        bookingId: b.bookingId,
+        customerName: b.userId.name,
+        customerEmail: b.userId.email,
+        ticketsBooked: b.ticketQuantity,
+        totalAmount: b.totalAmount,
+        bookingDate: b.createdAt,
+        status: b.status,
+      })),
+      generatedDate: new Date(),
+    };
+
+    res.json({ success: true, reportData });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// @desc    Download event report as CSV
+// @route   GET /api/admin/events/:id/download-csv
+// @access  Admin
+exports.downloadEventCSV = async (req, res) => {
+  try {
+    const event = await Event.findById(req.params.id);
+    if (!event) {
+      return res.status(404).json({ success: false, message: 'Event not found' });
+    }
+
+    const bookings = await Booking.find({ eventId: event._id }).populate('userId', 'name email');
+    const confirmedBookings = bookings.filter(b => b.status !== 'cancelled');
+    
+    const ticketsSold = confirmedBookings.reduce((sum, b) => sum + b.ticketQuantity, 0);
+    const revenue = confirmedBookings.reduce((sum, b) => sum + b.totalAmount, 0);
+
+    // Create CSV content
+    let csv = 'Event Management System - Event Report\n\n';
+    csv += `Report Generated: ${new Date().toLocaleString()}\n\n`;
+    csv += '=== EVENT DETAILS ===\n';
+    csv += `Event Name,${event.title}\n`;
+    csv += `Event Date,${new Date(event.date).toLocaleDateString()}\n`;
+    csv += `Event Time,${event.time}\n`;
+    csv += `Location,${event.location}\n`;
+    csv += `Category,${event.category}\n`;
+    csv += `Ticket Price,LKR ${event.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n`;
+    csv += `\n=== SALES SUMMARY ===\n`;
+    csv += `Total Seats,${event.totalSeats}\n`;
+    csv += `Tickets Sold,${ticketsSold}\n`;
+    csv += `Tickets Available,${event.totalSeats - ticketsSold}\n`;
+    csv += `Occupancy Rate,${((ticketsSold / event.totalSeats) * 100).toFixed(2)}%\n`;
+    csv += `Total Revenue,LKR ${revenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n`;
+    csv += `\n=== BOOKING DETAILS ===\n`;
+    csv += 'Booking ID,Customer Name,Email,Tickets Booked,Amount (LKR),Booking Date,Status\n';
+
+    confirmedBookings.forEach(booking => {
+      csv += `"${booking.bookingId}","${booking.userId.name}","${booking.userId.email}",${booking.ticketQuantity},"${booking.totalAmount.toFixed(2)}","${new Date(booking.createdAt).toLocaleString()}","${booking.status}"\n`;
+    });
+
+    // Set response headers for download
+    const filename = `${event.title.replace(/\s+/g, '_')}_Report_${new Date().toISOString().split('T')[0]}.csv`;
+    res.setHeader('Content-Type', 'text/csv;charset=utf-8;');
+    res.setHeader('Content-Disposition', `attachment;filename="${filename}"`);
+    res.send(csv);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// @desc    Download event report as PDF
+// @route   GET /api/admin/events/:id/download-pdf
+// @access  Admin
+exports.downloadEventPDF = async (req, res) => {
+  try {
+    const PDFDocument = require('pdfkit');
+    const event = await Event.findById(req.params.id);
+    
+    if (!event) {
+      return res.status(404).json({ success: false, message: 'Event not found' });
+    }
+
+    const bookings = await Booking.find({ eventId: event._id }).populate('userId', 'name email');
+    const confirmedBookings = bookings.filter(b => b.status !== 'cancelled');
+    
+    const ticketsSold = confirmedBookings.reduce((sum, b) => sum + b.ticketQuantity, 0);
+    const revenue = confirmedBookings.reduce((sum, b) => sum + b.totalAmount, 0);
+    const occupancyRate = ((ticketsSold / event.totalSeats) * 100).toFixed(2);
+
+    // Create PDF document
+    const doc = new PDFDocument({ margin: 50 });
+    const filename = `${event.title.replace(/\s+/g, '_')}_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+
+    // Set response headers
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment;filename="${filename}"`);
+    doc.pipe(res);
+
+    // Title
+    doc.fontSize(24).font('Helvetica-Bold').text('EVENT REPORT', { align: 'center' });
+    doc.fontSize(10).font('Helvetica').text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' });
+    doc.moveDown();
+
+    // Event Details Section
+    doc.fontSize(14).font('Helvetica-Bold').text('EVENT DETAILS', { underline: true });
+    doc.fontSize(11).font('Helvetica');
+    doc.text(`Event Name: ${event.title}`);
+    doc.text(`Date: ${new Date(event.date).toLocaleDateString()}`);
+    doc.text(`Time: ${event.time}`);
+    doc.text(`Location: ${event.location}`);
+    doc.text(`Category: ${event.category}`);
+    doc.text(`Ticket Price: LKR ${event.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+    doc.moveDown();
+
+    // Sales Summary Section
+    doc.fontSize(14).font('Helvetica-Bold').text('SALES SUMMARY', { underline: true });
+    doc.fontSize(11).font('Helvetica');
+    doc.text(`Total Seats: ${event.totalSeats}`);
+    doc.text(`Tickets Sold: ${ticketsSold}`);
+    doc.text(`Tickets Available: ${event.totalSeats - ticketsSold}`);
+    doc.text(`Occupancy Rate: ${occupancyRate}%`);
+    doc.text(`Total Revenue: LKR ${revenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+    doc.moveDown();
+
+    // Bookings Table
+    doc.fontSize(14).font('Helvetica-Bold').text('BOOKING DETAILS', { underline: true });
+    doc.moveDown(0.5);
+
+    // Table header
+    const tableTop = doc.y;
+    const col1 = 50, col2 = 150, col3 = 250, col4 = 350, col5 = 420, col6 = 490;
+
+    doc.fontSize(10).font('Helvetica-Bold');
+    doc.text('Booking ID', col1, tableTop);
+    doc.text('Customer', col2, tableTop);
+    doc.text('Tickets', col3, tableTop);
+    doc.text('Amount (LKR)', col4, tableTop);
+    doc.text('Date', col5, tableTop);
+    doc.text('Status', col6, tableTop);
+
+    // Draw separator line
+    doc.moveTo(50, tableTop + 15).lineTo(550, tableTop + 15).stroke();
+
+    // Table rows
+    let y = tableTop + 25;
+    doc.fontSize(9).font('Helvetica');
+
+    confirmedBookings.forEach((booking, index) => {
+      if (y > 700) {
+        doc.addPage();
+        y = 50;
+      }
+
+      doc.text(booking.bookingId, col1, y);
+      doc.text(booking.userId.name.substring(0, 15), col2, y);
+      doc.text(booking.ticketQuantity.toString(), col3, y);
+      doc.text(`${booking.totalAmount.toFixed(2)}`, col4, y);
+      doc.text(new Date(booking.createdAt).toLocaleDateString(), col5, y);
+      doc.text(booking.status, col6, y);
+
+      y += 15;
+    });
+
+    // Footer
+    doc.fontSize(10).font('Helvetica').text(
+      '--- End of Report ---',
+      { align: 'center', y: 750 }
+    );
+
+    doc.end();
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Server error' });

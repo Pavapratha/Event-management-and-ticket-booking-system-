@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
+import { useSmartEventRefresh } from '../hooks/useEventRefresh';
 import { EventCard, EventCardSkeleton } from '../components/EventCard';
 import { 
   SearchIcon, 
@@ -42,7 +43,7 @@ const transformEvent = (event) => {
     location: event.location,
     venue: event.location,
     image: event.image ? `${API_BASE}${event.image}` : null,
-    price: event.price === 0 ? 'Free' : `$${event.price}`,
+    price: event.price === 0 ? 'Free' : `Rs. ${parseFloat(event.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
     priceNum: event.price,
     category: event.category,
     spotsLeft,
@@ -63,7 +64,31 @@ export const Events = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  // Fetch events from API
+  // Fetch events from API with auto-refresh every 30 seconds
+  // This ensures user sees updates when admin creates/updates/deletes events
+  const { refetch: refreshEvents } = useSmartEventRefresh(setAllEventsTransformed, 30000);
+
+  // Transform and set events when raw events change
+  const setAllEventsTransformed = (rawEvents) => {
+    const events = (rawEvents || []).map(transformEvent);
+    setAllEvents(events);
+  };
+
+  // Manual refresh for immediate update (called when user actions happen)
+  const manualRefresh = async () => {
+    setIsLoading(true);
+    try {
+      const res = await api.get('/api/events');
+      const events = (res.data.events || []).map(transformEvent);
+      setAllEvents(events);
+    } catch (err) {
+      console.error('Failed to fetch events:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Legacy effect - can be removed if using hook
   useEffect(() => {
     const fetchEvents = async () => {
       setIsLoading(true);

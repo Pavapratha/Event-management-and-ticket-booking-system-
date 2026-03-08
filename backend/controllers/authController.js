@@ -28,10 +28,12 @@ const generateVerificationCode = () => {
 // Send verification email with 6-digit code
 const sendVerificationEmail = async (user, verificationCode) => {
   try {
-    console.log('\n📧 Sending verification email...');
-    console.log('   To:', user.email);
-    console.log('   User ID:', user._id);
-    console.log('   Code:', verificationCode);
+    console.log('\n' + '='.repeat(70));
+    console.log('📧 SENDING VERIFICATION EMAIL');
+    console.log('='.repeat(70));
+    console.log('Recipient Email:', user.email);
+    console.log('User ID:', user._id);
+    console.log('Verification Code:', verificationCode);
     
     if (!process.env.SMTP_FROM_EMAIL) {
       throw new Error('SMTP_FROM_EMAIL is not configured in environment variables');
@@ -51,21 +53,68 @@ const sendVerificationEmail = async (user, verificationCode) => {
       text: `Your verification code is: ${verificationCode}. This code expires in 10 minutes.`,
     };
 
-    console.log('   Mail options prepared');
+    console.log('Mail options prepared ✓');
+    console.log('Attempting connection to SMTP server...');
     
     const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Verification email sent successfully');
-    console.log('   Message ID:', info.messageId);
-    console.log('   Response:', info.response);
+    console.log('\n✅ VERIFICATION EMAIL SENT SUCCESSFULLY');
+    console.log('='.repeat(70));
+    console.log('Message ID:', info.messageId);
+    console.log('Response:', info.response);
+    console.log('='.repeat(70) + '\n');
     
     return info;
   } catch (error) {
-    console.error('\n❌ Error sending verification email:');
-    console.error('   Message:', error.message);
-    console.error('   Code:', error.code);
-    if (error.response) {
-      console.error('   SMTP Response:', error.response);
+    console.error('\n' + '='.repeat(70));
+    console.error('❌ ERROR SENDING VERIFICATION EMAIL');
+    console.error('='.repeat(70));
+    console.error('Error Message:', error.message);
+    console.error('Error Code:', error.code);
+    
+    // Detailed error analysis
+    if (error.code === 'EAUTH') {
+      console.error('\n🔴 AUTHENTICATION ERROR (535 5.7.8 BadCredentials)');
+      console.error('This means Gmail rejected your credentials.');
+      console.error('\n⚠️  COMMON CAUSES:');
+      console.error('  1. You used your actual Gmail password instead of an App Password');
+      console.error('  2. 2-Step Verification is not enabled on your Google Account');
+      console.error('  3. The App Password is incorrect or expired');
+      console.error('\n✅ SOLUTION:');
+      console.error('  1. Go to: https://myaccount.google.com/security');
+      console.error('  2. Enable "2-Step Verification" if not enabled');
+      console.error('  3. Go to: https://myaccount.google.com/apppasswords');
+      console.error('  4. Select: Mail + Windows Computer');
+      console.error('  5. Google generates 16-character password');
+      console.error('  6. Copy that password to SMTP_PASSWORD in .env (remove spaces)');
+      console.error('  7. Restart the server');
+    } else if (error.code === 'ECONNREFUSED') {
+      console.error('\n🔴 CONNECTION REFUSED');
+      console.error('Gmail SMTP server refused the connection.');
+      console.error('\n✅ CHECK:');
+      console.error('  - SMTP_HOST=smtp.gmail.com');
+      console.error('  - SMTP_PORT=587 (for TLS) or 465 (for SSL)');
+      console.error('  - Firewall allows outgoing connections to smtp.gmail.com');
+    } else if (error.code === 'ENOTFOUND') {
+      console.error('\n🔴 HOST NOT FOUND');
+      console.error('Cannot resolve smtp.gmail.com. Check your internet and DNS.');
+    } else if (error.code === 'ETIMEDOUT') {
+      console.error('\n🔴 CONNECTION TIMEOUT');
+      console.error('SMTP server not responding. May be network or firewall issue.');
     }
+    
+    if (error.response) {
+      console.error('\nSMTP Response:', error.response);
+    }
+    
+    console.error('\n🔍 Configuration Check:');
+    console.error('  SMTP_HOST:', process.env.SMTP_HOST);
+    console.error('  SMTP_PORT:', process.env.SMTP_PORT);
+    console.error('  SMTP_SECURE:', process.env.SMTP_SECURE);
+    console.error('  SMTP_USER (email):', process.env.SMTP_USER?.replace(/.(?=.{3})/g, '*'));
+    console.error('  SMTP_PASSWORD:', process.env.SMTP_PASSWORD ? '[SET - ' + process.env.SMTP_PASSWORD.length + ' characters]' : 'NOT SET');
+    console.error('  SMTP_FROM_EMAIL:', process.env.SMTP_FROM_EMAIL);
+    console.error('='.repeat(70) + '\n');
+    
     throw error;
   }
 };

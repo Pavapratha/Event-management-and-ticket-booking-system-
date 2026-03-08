@@ -37,6 +37,33 @@ function Events() {
     }
   };
 
+  const handleDownloadReport = async (eventId, format) => {
+    try {
+      const endpoint = format === 'pdf' 
+        ? `/api/admin/events/${eventId}/download-pdf`
+        : `/api/admin/events/${eventId}/download-csv`;
+      
+      const response = await api.get(endpoint, {
+        responseType: format === 'pdf' ? 'arraybuffer' : 'blob',
+      });
+
+      // Create blob and download
+      const blob = new Blob([response.data], {
+        type: format === 'pdf' ? 'application/pdf' : 'text/csv',
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `event-report.${format}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(err.response?.data?.message || `Failed to download ${format.toUpperCase()} report`);
+    }
+  };
+
   const filtered = events.filter(
     (e) =>
       e.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -129,7 +156,7 @@ function Events() {
                     </td>
                     <td>{new Date(event.date).toLocaleDateString()}</td>
                     <td>{event.location}</td>
-                    <td>${event.price}</td>
+                    <td>Rs. {parseFloat(event.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     <td>
                       <span style={{ color: event.availableSeats < 10 ? 'var(--danger)' : 'inherit' }}>
                         {event.availableSeats}/{event.totalSeats}
@@ -142,13 +169,27 @@ function Events() {
                       </span>
                     </td>
                     <td>
-                      <div style={{ display: 'flex', gap: 6 }}>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         <button
                           className="btn btn-sm btn-outline"
                           onClick={() => navigate(`/admin/events/edit/${event._id}`)}
                           title="Edit"
                         >
                           ✏️
+                        </button>
+                        <button
+                          className="btn btn-sm btn-outline"
+                          onClick={() => handleDownloadReport(event._id, 'csv')}
+                          title="Download CSV Report"
+                        >
+                          📊
+                        </button>
+                        <button
+                          className="btn btn-sm btn-outline"
+                          onClick={() => handleDownloadReport(event._id, 'pdf')}
+                          title="Download PDF Report"
+                        >
+                          📄
                         </button>
                         <button
                           className="btn btn-sm btn-danger"

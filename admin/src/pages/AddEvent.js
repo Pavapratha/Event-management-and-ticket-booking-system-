@@ -87,7 +87,7 @@ function EventForm({ initialData = {}, onSubmit, submitLabel = 'Save Event', loa
         </div>
 
         <div className="form-group">
-          <label className="form-label">Ticket Price (USD) *</label>
+          <label className="form-label">Ticket Price (LKR) *</label>
           <input type="number" name="price" className="form-control" value={form.price} onChange={handleChange} min="0" step="0.01" placeholder="0.00" />
         </div>
 

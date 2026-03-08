@@ -43,7 +43,7 @@ const transformEvent = (event, isFeatured = false) => {
     location: event.location,
     venue: event.location,
     image: event.image ? `${API_BASE}${event.image}` : null,
-    price: event.price === 0 ? 'Free' : `$${event.price}`,
+    price: event.price === 0 ? 'Free' : `Rs. ${parseFloat(event.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
     category: event.category,
     spotsLeft,
     attendees: soldSeats,
