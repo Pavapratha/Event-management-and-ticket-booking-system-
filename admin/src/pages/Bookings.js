@@ -12,9 +12,9 @@ function Bookings() {
   const fetchBookings = async () => {
     try {
       const res = await api.get('/api/admin/bookings');
-      setBookings(res.data.bookings);
+      setBookings(res.data.bookings || []);
     } catch (err) {
-      console.error(err);
+      console.error('Failed to fetch bookings:', err);
     } finally {
       setLoading(false);
     }
@@ -22,15 +22,18 @@ function Bookings() {
 
   useEffect(() => {
     fetchBookings();
+    
+    // Auto-refresh bookings every 20 seconds
+    const interval = setInterval(fetchBookings, 20000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleCancel = async (id) => {
     if (!window.confirm('Cancel this booking?')) return;
     try {
       await api.put(`/api/admin/bookings/${id}/cancel`);
-      setBookings((prev) =>
-        prev.map((b) => (b._id === id ? { ...b, status: 'cancelled' } : b))
-      );
+      // Refresh bookings after cancellation
+      await fetchBookings();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to cancel');
     }
@@ -38,10 +41,9 @@ function Bookings() {
 
   const handleStatusChange = async (id, status) => {
     try {
-      const res = await api.put(`/api/admin/bookings/${id}/status`, { status });
-      setBookings((prev) =>
-        prev.map((b) => (b._id === id ? { ...b, status: res.data.booking.status } : b))
-      );
+      await api.put(`/api/admin/bookings/${id}/status`, { status });
+      // Refresh bookings after status change
+      await fetchBookings();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to update status');
     }

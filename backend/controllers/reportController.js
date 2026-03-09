@@ -1,6 +1,7 @@
 const Event = require('../models/Event');
 const Booking = require('../models/Booking');
 const User = require('../models/User');
+const PDFDocument = require('pdfkit');
 const { displayReportPrice } = require('../utils/currency');
 
 // @desc    Get dashboard stats
@@ -214,10 +215,18 @@ exports.getEventReportData = async (req, res) => {
 // @access  Admin
 exports.downloadEventCSV = async (req, res) => {
   try {
+    console.log('\n' + '='.repeat(60));
+    console.log('📥 CSV DOWNLOAD STARTED');
+    console.log('='.repeat(60));
+    console.log('Event ID:', req.params.id);
+
     const event = await Event.findById(req.params.id);
     if (!event) {
+      console.log('❌ Event not found');
       return res.status(404).json({ success: false, message: 'Event not found' });
     }
+
+    console.log('Event Found:', event.title);
 
     const bookings = await Booking.find({ eventId: event._id }).populate('userId', 'name email');
     const confirmedBookings = bookings.filter(b => b.status !== 'cancelled');
@@ -250,12 +259,25 @@ exports.downloadEventCSV = async (req, res) => {
 
     // Set response headers for download
     const filename = `${event.title.replace(/\s+/g, '_')}_Report_${new Date().toISOString().split('T')[0]}.csv`;
-    res.setHeader('Content-Type', 'text/csv;charset=utf-8;');
+    res.setHeader('Content-Type', 'text/csv;charset=utf-8');
     res.setHeader('Content-Disposition', `attachment;filename="${filename}"`);
+    
+    console.log('✅ CSV generated successfully');
+    console.log('Filename:', filename);
+    console.log('File size:', csv.length, 'bytes');
+    console.log('='.repeat(60) + '\n');
+    
     res.send(csv);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('\n' + '='.repeat(60));
+    console.error('❌ CSV DOWNLOAD ERROR');
+    console.error('='.repeat(60));
+    console.error('Error:', error.message);
+    console.error('='.repeat(60) + '\n');
+    
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, message: 'Failed to generate CSV report', error: error.message });
+    }
   }
 };
 
@@ -264,12 +286,19 @@ exports.downloadEventCSV = async (req, res) => {
 // @access  Admin
 exports.downloadEventPDF = async (req, res) => {
   try {
-    const PDFDocument = require('pdfkit');
+    console.log('\n' + '='.repeat(60));
+    console.log('📥 PDF DOWNLOAD STARTED');
+    console.log('='.repeat(60));
+    console.log('Event ID:', req.params.id);
+
     const event = await Event.findById(req.params.id);
     
     if (!event) {
+      console.log('❌ Event not found');
       return res.status(404).json({ success: false, message: 'Event not found' });
     }
+
+    console.log('Event Found:', event.title);
 
     const bookings = await Booking.find({ eventId: event._id }).populate('userId', 'name email');
     const confirmedBookings = bookings.filter(b => b.status !== 'cancelled');
@@ -285,6 +314,16 @@ exports.downloadEventPDF = async (req, res) => {
     // Set response headers
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment;filename="${filename}"`);
+    
+    console.log('PDF Setup: Headers set, filename:', filename);
+
+    // Handle errors on the response stream
+    res.on('error', (err) => {
+      console.error('Response stream error:', err.message);
+      doc.end();
+    });
+
+    // Pipe document to response
     doc.pipe(res);
 
     // Title
@@ -358,9 +397,25 @@ exports.downloadEventPDF = async (req, res) => {
       { align: 'center', y: 750 }
     );
 
+    console.log('✅ PDF Content Generated');
+    console.log('Total Bookings:', confirmedBookings.length);
+    console.log('='.repeat(60) + '\n');
+
+    // End the document
     doc.end();
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('\n' + '='.repeat(60));
+    console.error('❌ PDF DOWNLOAD ERROR');
+    console.error('='.repeat(60));
+    console.error('Error:', error.message);
+    console.error('Stack:', error.stack);
+    console.error('='.repeat(60) + '\n');
+    
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, message: 'Failed to generate PDF report', error: error.message });
+    } else {
+      // Headers already sent, just end the response
+      res.end();
+    }
   }
 };

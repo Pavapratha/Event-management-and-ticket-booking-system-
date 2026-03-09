@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import api from '../services/api';
 import { 
   TicketIcon, CalendarIcon, HeartIcon, ClockIcon,
   TrendingUpIcon, UserIcon, SettingsIcon, ChevronRightIcon,
@@ -8,71 +9,109 @@ import {
 } from '../components/Icons';
 import '../styles/Dashboard.css';
 
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 export const Dashboard = () => {
   const { user } = useAuth();
+  const [stats, setStats] = useState([]);
+  const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Sample stats - in production these would come from an API
-  const stats = [
-    { 
-      icon: TicketIcon, 
-      label: 'My Tickets', 
-      value: '5', 
-      change: '+2 this month',
-      color: 'primary' 
-    },
-    { 
-      icon: CalendarIcon, 
-      label: 'Upcoming Events', 
-      value: '3', 
-      change: 'Next: Tomorrow',
-      color: 'secondary' 
-    },
-    { 
-      icon: HeartIcon, 
-      label: 'Saved Events', 
-      value: '12', 
-      change: '+4 this week',
-      color: 'pink' 
-    },
-    { 
-      icon: TrendingUpIcon, 
-      label: 'Events Attended', 
-      value: '28', 
-      change: 'All time',
-      color: 'green' 
-    },
-  ];
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        // Fetch user's bookings
+        const bookingsRes = await api.get('/api/user/bookings');
+        const allBookings = bookingsRes.data.bookings || [];
+        
+        // Filter non-cancelled bookings for current and future dates
+        const now = new Date();
+        const upcomingBookings = allBookings.filter(booking => {
+          const eventDate = new Date(booking.eventId?.date);
+          return booking.status !== 'cancelled' && eventDate >= now;
+        }).sort((a, b) => new Date(a.eventId.date) - new Date(b.eventId.date));
 
-  // Sample upcoming events
-  const upcomingEvents = [
-    {
-      id: 1,
-      title: 'Summer Music Festival 2024',
-      date: 'Jun 15, 2024',
-      time: '6:00 PM',
-      location: 'Central Park, NYC',
-      image: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=100&h=100&fit=crop',
-      ticketType: 'VIP Pass'
-    },
-    {
-      id: 2,
-      title: 'Tech Conference 2024',
-      date: 'Jun 20, 2024',
-      time: '9:00 AM',
-      location: 'Convention Center',
-      image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=100&h=100&fit=crop',
-      ticketType: 'General Admission'
-    },
-    {
-      id: 3,
-      title: 'Food & Wine Festival',
-      date: 'Jun 25, 2024',
-      time: '12:00 PM',
-      location: 'Waterfront Plaza',
-      image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=100&h=100&fit=crop',
-      ticketType: 'Weekend Pass'
+        // Get only next 3 upcoming events
+        const displayUpcoming = upcomingBookings.slice(0, 3).map(booking => ({
+          id: booking.eventId?._id,
+          title: booking.eventId?.title || 'Unknown Event',
+          date: new Date(booking.eventId?.date).toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric' 
+          }),
+          time: booking.eventId?.time || 'TBD',
+          location: booking.eventId?.location || 'TBD',
+          image: booking.eventId?.image ? `${API_BASE}${booking.eventId.image}` : 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=100&h=100&fit=crop',
+          ticketType: `${booking.ticketQuantity} Ticket${booking.ticketQuantity > 1 ? 's' : ''}`,
+          bookingId: booking.bookingId
+        }));
+
+        // Calculate stats from real data
+        const totalTickets = allBookings
+          .filter(b => b.status !== 'cancelled')
+          .reduce((sum, b) => sum + b.ticketQuantity, 0);
+
+        const upcomingCount = upcomingBookings.length;
+
+        const pastBookings = allBookings.filter(booking => {
+          const eventDate = new Date(booking.eventId?.date);
+          return booking.status !== 'cancelled' && eventDate < now;
+        }).length;
+
+        setStats([
+          { 
+            icon: TicketIcon, 
+            label: 'My Tickets', 
+            value: totalTickets.toString(), 
+            change: allBookings.length > 0 ? `${allBookings.length} bookings total` : 'No bookings yet',
+            color: 'primary' 
+          },
+          { 
+            icon: CalendarIcon, 
+            label: 'Upcoming Events', 
+            value: upcomingCount.toString(), 
+            change: upcomingCount > 0 ? `Next: ${upcomingBookings[0]?.eventId?.title?.substring(0, 20)}...` : 'No upcoming events',
+            color: 'secondary' 
+          },
+          { 
+            icon: HeartIcon, 
+            label: 'Saved Events', 
+            value: '0', 
+            change: 'Feature coming soon',
+            color: 'pink' 
+          },
+          { 
+            icon: TrendingUpIcon, 
+            label: 'Events Attended', 
+            value: pastBookings.toString(), 
+            change: 'All time',
+            color: 'green' 
+          },
+        ]);
+
+        setUpcomingEvents(displayUpcoming);
+      } catch (err) {
+        console.error('Failed to fetch dashboard data:', err);
+        // Fallback to empty data
+        setStats([
+          { icon: TicketIcon, label: 'My Tickets', value: '0', change: 'No bookings yet', color: 'primary' },
+          { icon: CalendarIcon, label: 'Upcoming Events', value: '0', change: 'No upcoming events', color: 'secondary' },
+          { icon: HeartIcon, label: 'Saved Events', value: '0', change: 'Feature coming soon', color: 'pink' },
+          { icon: TrendingUpIcon, label: 'Events Attended', value: '0', change: 'All time', color: 'green' },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchDashboardData();
+      // Refresh every 30 seconds
+      const interval = setInterval(fetchDashboardData, 30000);
+      return () => clearInterval(interval);
     }
-  ];
+  }, [user]);
 
   // Quick actions
   const quickActions = [

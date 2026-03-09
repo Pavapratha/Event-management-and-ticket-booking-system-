@@ -13,18 +13,23 @@ function Reports() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchReports = async () => {
+    try {
+      const res = await api.get('/api/admin/reports');
+      setData(res.data);
+    } catch (err) {
+      console.error('Failed to fetch reports:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        const res = await api.get('/api/admin/reports');
-        setData(res.data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchReports();
+    
+    // Auto-refresh reports every 30 seconds
+    const interval = setInterval(fetchReports, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) return <div className="loading-screen"><div className="spinner"></div></div>;

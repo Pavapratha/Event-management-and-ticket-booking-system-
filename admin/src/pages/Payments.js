@@ -12,11 +12,23 @@ function Payments() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
+  const fetchPayments = async () => {
+    try {
+      const res = await api.get('/api/admin/payments');
+      setData(res.data);
+    } catch (err) {
+      console.error('Failed to fetch payments:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    api.get('/api/admin/payments')
-      .then((res) => setData(res.data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    fetchPayments();
+    
+    // Auto-refresh payments every 25 seconds
+    const interval = setInterval(fetchPayments, 25000);
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) return <div className="loading-screen"><div className="spinner"></div></div>;

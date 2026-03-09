@@ -26,19 +26,31 @@ function StatCard({ icon, label, value, color, bg }) {
 function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchDashboard = async () => {
+    try {
+      const res = await api.get('/api/admin/dashboard');
+      setData(res.data);
+    } catch (err) {
+      console.error('Failed to fetch dashboard data:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchDashboard();
+  };
 
   useEffect(() => {
-    const fetchDashboard = async () => {
-      try {
-        const res = await api.get('/api/admin/dashboard');
-        setData(res.data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchDashboard();
+    
+    // Auto-refresh dashboard every 30 seconds
+    const interval = setInterval(fetchDashboard, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {
@@ -83,8 +95,19 @@ function Dashboard() {
           <h1 className="page-title">Dashboard</h1>
           <p className="page-subtitle">Welcome back! Here's what's happening.</p>
         </div>
-        <div className="dashboard-date">
-          {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <button 
+            className="btn btn-outline" 
+            onClick={handleRefresh}
+            disabled={refreshing}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            {refreshing ? <span className="btn-spinner"></span> : '🔄'}
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+          <div className="dashboard-date">
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          </div>
         </div>
       </div>
 

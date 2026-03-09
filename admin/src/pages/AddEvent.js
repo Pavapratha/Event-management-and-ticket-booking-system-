@@ -146,12 +146,18 @@ function AddEvent() {
   const handleSubmit = async (formData, setError) => {
     setLoading(true);
     try {
-      await api.post('/api/admin/events', formData, {
+      const response = await api.post('/api/admin/events', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      navigate('/admin/events');
+      if (response.data.success) {
+        navigate('/admin/events');
+      } else {
+        setError(response.data.message || 'Failed to create event');
+      }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create event');
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to create event';
+      setError(errorMessage);
+      console.error('Event creation error:', err);
     } finally {
       setLoading(false);
     }

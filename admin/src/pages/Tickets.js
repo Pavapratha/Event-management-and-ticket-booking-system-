@@ -12,21 +12,28 @@ function Tickets() {
   const fetchTickets = async () => {
     try {
       const res = await api.get('/api/admin/bookings');
-      setBookings(res.data.bookings);
+      setBookings(res.data.bookings || []);
     } catch (err) {
-      console.error(err);
+      console.error('Failed to fetch tickets:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchTickets(); }, []);
+  useEffect(() => {
+    fetchTickets();
+    
+    // Auto-refresh tickets every 20 seconds
+    const interval = setInterval(fetchTickets, 20000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleCancel = async (id) => {
     if (!window.confirm('Cancel this ticket?')) return;
     try {
       await api.put(`/api/admin/bookings/${id}/cancel`);
-      setBookings((prev) => prev.map((b) => b._id === id ? { ...b, status: 'cancelled' } : b));
+      // Refresh the tickets list after cancellation
+      await fetchTickets();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to cancel');
     }

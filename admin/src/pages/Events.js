@@ -16,7 +16,7 @@ function Events() {
       const res = await api.get('/api/admin/events');
       setEvents(res.data.events);
     } catch (err) {
-      console.error(err);
+      console.error('Failed to fetch events:', err);
     } finally {
       setLoading(false);
     }
@@ -24,14 +24,19 @@ function Events() {
 
   useEffect(() => {
     fetchEvents();
+    
+    // Auto-refresh events every 15 seconds
+    const interval = setInterval(fetchEvents, 15000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleDelete = async () => {
     if (!deleteModal) return;
     try {
       await api.delete(`/api/admin/events/${deleteModal._id}`);
-      setEvents((prev) => prev.filter((e) => e._id !== deleteModal._id));
       setDeleteModal(null);
+      // Refresh the events list after deletion
+      await fetchEvents();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to delete event');
     }
@@ -39,28 +44,66 @@ function Events() {
 
   const handleDownloadReport = async (eventId, format) => {
     try {
+      console.log(`\n${'='.repeat(50)}`);
+      console.log(`📥 ${format.toUpperCase()} DOWNLOAD INITIATED`);
+      console.log(`${'='.repeat(50)}`);
+      console.log('Event ID:', eventId);
+      
       const endpoint = format === 'pdf' 
         ? `/api/admin/events/${eventId}/download-pdf`
         : `/api/admin/events/${eventId}/download-csv`;
       
+      console.log('Endpoint:', endpoint);
+      console.log('Request Type:', format === 'pdf' ? 'arraybuffer' : 'blob');
+
       const response = await api.get(endpoint, {
         responseType: format === 'pdf' ? 'arraybuffer' : 'blob',
       });
+
+      console.log('✅ Response received');
+      console.log('Response Status:', response.status);
+      console.log('Response Size:', response.data.size || response.data.length, 'bytes');
 
       // Create blob and download
       const blob = new Blob([response.data], {
         type: format === 'pdf' ? 'application/pdf' : 'text/csv',
       });
+      
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `event-report.${format}`;
+      
+      // Use the filename from response headers if available
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `event-report.${format}`;
+      if (contentDisposition) {
+        const matches = contentDisposition.match(/filename="(.+?)"/);
+        if (matches && matches[1]) {
+          filename = matches[1];
+        }
+      }
+      
+      link.download = filename;
+      console.log('Download Filename:', filename);
+      
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
+      
+      console.log('✅ Download completed successfully');
+      console.log(`${'='.repeat(50)}\n`);
     } catch (err) {
-      alert(err.response?.data?.message || `Failed to download ${format.toUpperCase()} report`);
+      console.error(`\n${'='.repeat(50)}`);
+      console.error(`❌ ${format.toUpperCase()} DOWNLOAD FAILED`);
+      console.error(`${'='.repeat(50)}`);
+      console.error('Error Status:', err.response?.status);
+      console.error('Error Message:', err.response?.data?.message || err.message);
+      console.error('Full Error:', err);
+      console.error(`${'='.repeat(50)}\n`);
+      
+      const errorMsg = err.response?.data?.message || `Failed to download ${format.toUpperCase()} report`;
+      alert(errorMsg + '\n\nPlease check the browser console (F12) and backend logs for more details.');
     }
   };
 

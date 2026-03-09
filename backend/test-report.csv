@@ -1,0 +1,21 @@
+Event Management System - Event Report
+
+Report Generated: 3/9/2026, 10:20:25 AM
+
+=== EVENT DETAILS ===
+Event Name,Party 1
+Event Date,3/24/2026
+Event Time,00:02
+Location,Time Square
+Category,Music
+Ticket Price,LKR 1,000.00
+
+=== SALES SUMMARY ===
+Total Seats,30
+Tickets Sold,0
+Tickets Available,30
+Occupancy Rate,0.00%
+Total Revenue,LKR 0.00
+
+=== BOOKING DETAILS ===
+Booking ID,Customer Name,Email,Tickets Booked,Amount (LKR),Booking Date,Status

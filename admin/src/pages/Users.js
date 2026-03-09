@@ -82,19 +82,30 @@ function Users() {
   const [search, setSearch] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
 
+  const fetchUsers = async () => {
+    try {
+      const res = await api.get('/api/admin/users');
+      setUsers(res.data.users || []);
+    } catch (err) {
+      console.error('Failed to fetch users:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    api.get('/api/admin/users')
-      .then((res) => setUsers(res.data.users))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    fetchUsers();
+    
+    // Auto-refresh users every 30 seconds
+    const interval = setInterval(fetchUsers, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleBlock = async (userId) => {
     try {
-      const res = await api.put(`/api/admin/users/${userId}/block`);
-      setUsers((prev) =>
-        prev.map((u) => u._id === userId ? { ...u, isBlocked: res.data.user.isBlocked } : u)
-      );
+      await api.put(`/api/admin/users/${userId}/block`);
+      // Refresh users list after blocking/unblocking
+      await fetchUsers();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to update user');
     }

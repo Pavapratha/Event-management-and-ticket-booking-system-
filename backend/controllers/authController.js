@@ -217,16 +217,32 @@ exports.register = async (req, res) => {
         },
       });
     } catch (emailError) {
-      console.error('\n❌ Email sending failed:');
+      console.error('\n⚠️  Email sending failed, but user created. Auto-verifying for development.');
       console.error('   Error:', emailError.message);
-      console.error('   Deleting user from database...');
-      // If email fails, delete the user and return error
-      await User.findByIdAndDelete(user._id);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to send verification email. Please try registering again.',
-        debug: process.env.NODE_ENV === 'development' ? emailError.message : undefined,
-      });
+      
+      // For development: auto-verify user if email fails
+      if (process.env.NODE_ENV === 'development') {
+        await User.findByIdAndUpdate(user._id, { isVerified: true });
+        return res.status(201).json({
+          success: true,
+          message: 'User registered successfully. Email verification skipped (development mode).',
+          requiresVerification: false,
+          user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            isVerified: true,
+          },
+        });
+      } else {
+        // For production: fail the registration
+        await User.findByIdAndDelete(user._id);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to send verification email. Please try registering again.',
+          debug: process.env.NODE_ENV === 'development' ? emailError.message : undefined,
+        });
+      }
     }
   } catch (error) {
     console.error('\n❌ Registration error:', error.message);

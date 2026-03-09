@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import { useAuth } from '../hooks/useAuth';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { HeroSection } from '../components/HeroSection';
 import { EventCard, EventCardSkeleton } from '../components/EventCard';
+import { BookingModal } from '../components/BookingModal';
 import { 
   ArrowRightIcon, 
   MusicIcon, 
@@ -117,29 +119,58 @@ const stats = [
 ];
 
 export const Home = () => {
+  const { user } = useAuth();
   const [featuredEvents, setFeaturedEvents] = useState([]);
   const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [homeStats, setHomeStats] = useState([
+    { value: '0', label: 'Events Listed' },
+    { value: '0', label: 'Tickets Sold' },
+    { value: '0', label: 'Active Users' },
+    { value: '99%', label: 'Happy Customers' },
+  ]);
   const [loading, setLoading] = useState(true);
+  const [selectedEventForBooking, setSelectedEventForBooking] = useState(null);
 
   useEffect(() => {
-    const fetchEvents = async () => {
+    const fetchData = async () => {
       try {
-        const res = await api.get('/api/events');
-        const events = res.data.events || [];
-        // Sort by date ascending (upcoming first)
+        // Fetch events
+        const eventsRes = await api.get('/api/events');
+        const events = eventsRes.data.events || [];
         const sorted = events.sort((a, b) => new Date(a.date) - new Date(b.date));
-        // First 4 as featured, next 4 as upcoming
         const featured = sorted.slice(0, 4).map((e) => transformEvent(e, true));
         const upcoming = sorted.slice(4, 8).map((e) => transformEvent(e, false));
         setFeaturedEvents(featured);
         setUpcomingEvents(upcoming);
+
+        // Fetch stats
+        try {
+          // Get all bookings to count tickets sold
+          const bookingsRes = await api.get('/api/admin/bookings', {
+            headers: { Authorization: localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : '' }
+          }).catch(() => ({ data: { bookings: [] } }));
+          
+          const allBookings = bookingsRes.data.bookings || [];
+          const ticketsSold = allBookings
+            .filter(b => b.status !== 'cancelled')
+            .reduce((sum, b) => sum + b.ticketQuantity, 0);
+
+          setHomeStats([
+            { value: events.length.toString(), label: 'Events Listed' },
+            { value: ticketsSold.toString(), label: 'Tickets Sold' },
+            { value: '0+', label: 'Active Users' },
+            { value: '99%', label: 'Happy Customers' },
+          ]);
+        } catch (err) {
+          console.log('Could not fetch detailed stats (okay for non-admin users)');
+        }
       } catch (err) {
         console.error('Failed to fetch events:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchEvents();
+    fetchData();
   }, []);
 
   return (
@@ -203,7 +234,20 @@ export const Home = () => {
               [...Array(4)].map((_, i) => <EventCardSkeleton key={i} variant="featured" />)
             ) : featuredEvents.length > 0 ? (
               featuredEvents.map((event) => (
-                <EventCard key={event.id} event={event} variant="featured" />
+                <div
+                  key={event.id}
+                  onClick={() => {
+                    if (user) {
+                      setSelectedEventForBooking(event);
+                    } else {
+                      alert('Please log in to book tickets');
+                      window.location.href = '/login';
+                    }
+                  }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <EventCard event={event} variant="featured" />
+                </div>
               ))
             ) : (
               <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -258,7 +302,20 @@ export const Home = () => {
               [...Array(4)].map((_, i) => <EventCardSkeleton key={i} />)
             ) : upcomingEvents.length > 0 ? (
               upcomingEvents.map((event) => (
-                <EventCard key={event.id} event={event} />
+                <div
+                  key={event.id}
+                  onClick={() => {
+                    if (user) {
+                      setSelectedEventForBooking(event);
+                    } else {
+                      alert('Please log in to book tickets');
+                      window.location.href = '/login';
+                    }
+                  }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <EventCard event={event} />
+                </div>
               ))
             ) : (
               <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -273,7 +330,7 @@ export const Home = () => {
       <section className="section stats-section">
         <div className="container">
           <div className="stats-grid">
-            {stats.map((stat, index) => (
+            {homeStats.map((stat, index) => (
               <div key={index} className="stat-card">
                 <span className="stat-card-value">{stat.value}</span>
                 <span className="stat-card-label">{stat.label}</span>
@@ -350,6 +407,18 @@ export const Home = () => {
           </div>
         </div>
       </section>
+
+      {/* Booking Modal */}
+      {selectedEventForBooking && (
+        <BookingModal
+          event={selectedEventForBooking}
+          onClose={() => setSelectedEventForBooking(null)}
+          onBookingSuccess={() => {
+            // Refresh events after successful booking
+            setSelectedEventForBooking(null);
+          }}
+        />
+      )}
 
       <Footer />
     </div>

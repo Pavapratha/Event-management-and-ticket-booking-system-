@@ -28,12 +28,18 @@ function EditEvent() {
   const handleSubmit = async (formData, setError) => {
     setLoading(true);
     try {
-      await api.put(`/api/admin/events/${id}`, formData, {
+      const response = await api.put(`/api/admin/events/${id}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      navigate('/admin/events');
+      if (response.data.success) {
+        navigate('/admin/events');
+      } else {
+        setError(response.data.message || 'Failed to update event');
+      }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update event');
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to update event';
+      setError(errorMessage);
+      console.error('Event update error:', err);
     } finally {
       setLoading(false);
     }
