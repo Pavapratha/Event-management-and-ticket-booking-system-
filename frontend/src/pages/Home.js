@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../hooks/useAuth';
-import { Navbar } from '../components/Navbar';
-import { Footer } from '../components/Footer';
 import { HeroSection } from '../components/HeroSection';
 import { EventCard, EventCardSkeleton } from '../components/EventCard';
 import { BookingModal } from '../components/BookingModal';
@@ -17,9 +15,7 @@ import {
   ShieldCheckIcon,
   ZapIcon,
   QrCodeIcon,
-  StarIcon,
-  UsersIcon,
-  TrendingUpIcon
+  StarIcon
 } from '../components/Icons';
 import './Home.css';
 
@@ -111,13 +107,6 @@ const testimonials = [
   },
 ];
 
-const stats = [
-  { value: '10K+', label: 'Events Listed' },
-  { value: '500K+', label: 'Tickets Sold' },
-  { value: '50+', label: 'Cities' },
-  { value: '99%', label: 'Happy Customers' },
-];
-
 export const Home = () => {
   const { user } = useAuth();
   const [featuredEvents, setFeaturedEvents] = useState([]);
@@ -158,8 +147,6 @@ export const Home = () => {
           setHomeStats([
             { value: events.length.toString(), label: 'Events Listed' },
             { value: ticketsSold.toString(), label: 'Tickets Sold' },
-            { value: '0+', label: 'Active Users' },
-            { value: '99%', label: 'Happy Customers' },
           ]);
         } catch (err) {
           console.log('Could not fetch detailed stats (okay for non-admin users)');
@@ -175,8 +162,6 @@ export const Home = () => {
 
   return (
     <div className="home-page">
-      <Navbar />
-      
       {/* Hero Section */}
       <HeroSection />
 
@@ -393,16 +378,6 @@ export const Home = () => {
                   Create Account
                 </Link>
               </div>
-              <div className="cta-stats">
-                <div className="cta-stat">
-                  <UsersIcon size={20} />
-                  <span>500K+ Happy Users</span>
-                </div>
-                <div className="cta-stat">
-                  <TrendingUpIcon size={20} />
-                  <span>Growing Every Day</span>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -419,8 +394,6 @@ export const Home = () => {
           }}
         />
       )}
-
-      <Footer />
     </div>
   );
 };

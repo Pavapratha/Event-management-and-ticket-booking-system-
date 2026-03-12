@@ -86,24 +86,6 @@ export const HeroSection = () => {
               Create Account
             </Link>
           </div>
-
-          {/* Stats */}
-          <div className="hero-stats animate-fadeInUp stagger-4">
-            <div className="stat-item">
-              <span className="stat-value">10K+</span>
-              <span className="stat-label">Events</span>
-            </div>
-            <div className="stat-divider"></div>
-            <div className="stat-item">
-              <span className="stat-value">500K+</span>
-              <span className="stat-label">Tickets Sold</span>
-            </div>
-            <div className="stat-divider"></div>
-            <div className="stat-item">
-              <span className="stat-value">50+</span>
-              <span className="stat-label">Cities</span>
-            </div>
-          </div>
         </div>
       </div>
 

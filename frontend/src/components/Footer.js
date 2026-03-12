@@ -94,7 +94,7 @@ export const Footer = () => {
               
               <div className="footer-location">
                 <MapPinIcon size={16} />
-                <span>San Francisco, CA</span>
+                <span>Colombo, Sri Lanka</span>
               </div>
 
               {/* Social Links */}
