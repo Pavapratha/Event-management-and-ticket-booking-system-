@@ -1,76 +1,310 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useBooking } from '../context/BookingContext';
 import { PaymentGateway } from './PaymentGateway';
-import { XIcon, MinusIcon, PlusIcon } from './Icons';
+import { SelectCategory } from './SelectCategory';
+import { TicketSummary } from './TicketSummary';
+import { TicketConfirmation } from './TicketConfirmation';
+import { XIcon, CalendarIcon, ClockIcon, MapPinIcon, TicketIcon } from './Icons';
 import './BookingModal.css';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-export const BookingModal = ({ event, onClose, onBookingSuccess }) => {
-  const [quantity, setQuantity] = useState(1);
-  const [step, setStep] = useState('quantity'); // quantity or payment
-  const [totalAmount, setTotalAmount] = useState(0);
-  const [bookingInProgress, setBookingInProgress] = useState(false);
+export const BookingModal = ({ eventId, onClose, onBookingSuccess }) => {
+  const navigate = useNavigate();
+  const {
+    currentStep,
+    setCurrentStep,
+    selectedTickets,
+    bookingId,
+    totalAmount,
+    setEvent,
+    setBookingId,
+    setBooking,
+    setError,
+    setLoading,
+    loading,
+    error,
+    resetBooking,
+  } = useBooking();
 
+  const [eventData, setEventData] = useState(null);
+  const [fetchError, setFetchError] = useState('');
+  const [localError, setLocalError] = useState('');
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+
+  // Fetch event data by ID
   useEffect(() => {
-    const price = event.priceNum || parseFloat(event.price?.replace(/Rs\.|,/g, '')) || 0;
-    setTotalAmount(price * quantity);
-  }, [quantity, event]);
+    if (!eventId) {
+      setFetchError('No event ID provided');
+      return;
+    }
 
-  const handleQuantityChange = (delta) => {
-    const maxSeats = event.spotsLeft || 1;
-    const newQuantity = quantity + delta;
-    if (newQuantity > 0 && newQuantity <= maxSeats) {
-      setQuantity(newQuantity);
+    const fetchEvent = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`${API_BASE}/api/events/${eventId}`);
+        if (!response.ok) {
+          throw new Error('Event not found');
+        }
+        const data = await response.json();
+        if (data.success && data.event) {
+          const ev = data.event;
+          // If event has no ticketCategories, create a default one from base price
+          if (!ev.ticketCategories || ev.ticketCategories.length === 0) {
+            ev.ticketCategories = [{
+              _id: 'default',
+              name: 'General Admission',
+              price: ev.price || 0,
+              totalQuantity: ev.totalSeats || 0,
+              availableQuantity: ev.availableSeats || 0,
+            }];
+          }
+          setEventData(ev);
+          setEvent(ev);
+          setCurrentStep('eventInfo');
+        } else {
+          setFetchError('Event not found');
+        }
+      } catch (err) {
+        setFetchError(err.message || 'Failed to load event');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvent();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId]);
+
+  // Step 1: Proceed from event info to ticket selection
+  const handleEventInfoProceed = () => {
+    setCurrentStep('selectCategory');
+  };
+
+  // Step 2: Handle category selection completion → create booking
+  const handleCategoryProceed = async () => {
+    if (!selectedTickets || selectedTickets.length === 0) {
+      setLocalError('Please select at least one ticket');
+      return;
+    }
+
+    setLoading(true);
+    setLocalError('');
+
+    try {
+      const response = await fetch(`${API_BASE}/api/bookings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({
+          eventId: eventData._id,
+          ticketDetails: selectedTickets,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to create booking');
+      }
+
+      const data = await response.json();
+      setBookingId(data.booking._id);
+      setBooking(data.booking);
+      setCurrentStep('summary');
+    } catch (err) {
+      console.error('Booking creation error:', err);
+      setLocalError(err.message || 'Failed to create booking. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Step 3: Handle summary → proceed to payment
+  const handleSummaryProceed = () => {
+    setCurrentStep('payment');
+  };
+
+  // Handle cancel booking
+  const handleCancelBooking = () => {
+    resetBooking();
+    onClose();
+  };
+
+  // Step 4: Handle payment success
   const handlePaymentSuccess = async (paymentData) => {
-    setBookingInProgress(true);
+    setPaymentProcessing(true);
+    setLocalError('');
+
     try {
-      // Create booking in database
-      const bookingResponse = await fetch(
-        `${API_BASE}/api/user/bookings`,
+      const response = await fetch(
+        `${API_BASE}/api/bookings/${bookingId}/confirm`,
         {
-          method: 'POST',
+          method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
           },
           body: JSON.stringify({
-            eventId: event.id,
-            ticketQuantity: quantity,
-            totalAmount: totalAmount,
             paymentDetails: {
               transactionId: paymentData.transactionId,
               method: 'fake-payment-gateway',
               status: 'completed',
-              cardLast4: paymentData.cardLast4
-            }
-          })
+              cardLast4: paymentData.cardLast4,
+            },
+          }),
         }
       );
 
-      if (!bookingResponse.ok) {
-        throw new Error('Booking failed');
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to confirm booking');
       }
 
-      const bookingData = await bookingResponse.json();
-      
-      // Close modal and trigger success callback
-      onBookingSuccess(bookingData.booking);
-      setTimeout(() => {
-        onClose();
-      }, 1500);
+      const data = await response.json();
+      setBooking(data.booking);
+      setCurrentStep('confirmation');
+
+      if (onBookingSuccess) {
+        onBookingSuccess(data.booking);
+      }
     } catch (err) {
-      console.error('Booking error:', err);
-      alert('Booking failed. Please try again.');
-      setStep('payment');
+      console.error('Payment confirmation error:', err);
+      setLocalError(err.message || 'Payment failed. Please try again.');
+      setCurrentStep('summary');
     } finally {
-      setBookingInProgress(false);
+      setPaymentProcessing(false);
     }
   };
 
-  const price = event.priceNum || parseFloat(event.price?.replace(/Rs\.|,/g, '')) || 0;
+  // Step 4: Handle payment cancel
+  const handlePaymentCancel = () => {
+    setCurrentStep('summary');
+  };
+
+  // Step 5: Handle confirmation completion
+  const handleConfirmationComplete = () => {
+    resetBooking();
+    onClose();
+    navigate('/tickets');
+  };
+
+  // Render event info step
+  const renderEventInfo = () => {
+    if (!eventData) return null;
+    const dateObj = new Date(eventData.date);
+    const formattedDate = dateObj.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    const imageUrl = eventData.image ? `${API_BASE}${eventData.image}` : null;
+    const isSoldOut = eventData.availableSeats <= 0;
+
+    return (
+      <div className="booking-step-eventinfo">
+        {imageUrl && (
+          <div className="eventinfo-image">
+            <img src={imageUrl} alt={eventData.title} />
+          </div>
+        )}
+        <h3 className="eventinfo-title">{eventData.title}</h3>
+        <p className="eventinfo-desc">{eventData.description}</p>
+        <div className="eventinfo-meta">
+          <div className="eventinfo-meta-item">
+            <CalendarIcon size={16} />
+            <span>{formattedDate}</span>
+          </div>
+          <div className="eventinfo-meta-item">
+            <ClockIcon size={16} />
+            <span>{eventData.time}</span>
+          </div>
+          <div className="eventinfo-meta-item">
+            <MapPinIcon size={16} />
+            <span>{eventData.venue || eventData.location}</span>
+          </div>
+          <div className="eventinfo-meta-item">
+            <TicketIcon size={16} />
+            <span>
+              {isSoldOut
+                ? 'Sold Out'
+                : `${eventData.availableSeats} tickets available`}
+            </span>
+          </div>
+        </div>
+        {isSoldOut ? (
+          <div className="booking-error">Tickets are sold out for this event.</div>
+        ) : (
+          <div className="booking-actions">
+            <button className="btn btn-primary" onClick={handleEventInfoProceed}>
+              Select Tickets
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderStep = () => {
+    if (fetchError) {
+      return (
+        <div className="booking-step-error">
+          <h3>{fetchError}</h3>
+          <button className="btn btn-primary" onClick={onClose}>Close</button>
+        </div>
+      );
+    }
+
+    switch (currentStep) {
+      case 'eventInfo':
+        return renderEventInfo();
+      case 'selectCategory':
+        return (
+          <SelectCategory
+            event={eventData}
+            onProceed={handleCategoryProceed}
+          />
+        );
+      case 'summary':
+        return (
+          <TicketSummary
+            event={eventData}
+            bookingId={bookingId}
+            onProceed={handleSummaryProceed}
+            onCancel={handleCancelBooking}
+          />
+        );
+      case 'payment':
+        return (
+          <div className="booking-step-payment">
+            <PaymentGateway
+              amount={totalAmount}
+              eventTitle={eventData?.title}
+              onSuccess={handlePaymentSuccess}
+              onCancel={handlePaymentCancel}
+              loading={paymentProcessing}
+            />
+          </div>
+        );
+      case 'confirmation':
+        return (
+          <TicketConfirmation
+            event={eventData}
+            booking={null}
+            onDownloadComplete={handleConfirmationComplete}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  const stepNames = ['eventInfo', 'selectCategory', 'summary', 'payment', 'confirmation'];
+  const stepLabels = ['Event Info', 'Select Tickets', 'Summary', 'Payment', 'Confirmation'];
+  const currentIndex = stepNames.indexOf(currentStep);
 
   return (
     <div className="booking-modal-overlay" onClick={onClose}>
@@ -79,112 +313,46 @@ export const BookingModal = ({ event, onClose, onBookingSuccess }) => {
           <XIcon size={24} />
         </button>
 
-        {step === 'quantity' ? (
-          <div className="booking-step-quantity">
-            <div className="booking-event-info">
-              <img src={event.image} alt={event.title} className="booking-event-image" />
-              <div className="booking-event-details">
-                <h2>{event.title}</h2>
-                <div className="event-meta">
-                  <span>📅 {event.date}</span>
-                  <span>🕐 {event.time}</span>
-                  <span>📍 {event.location}</span>
-                </div>
-                <div className="event-price">
-                  Price per Ticket: <span className="price-value">Rs. {price.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-                </div>
-                <div className="event-availability">
-                  <span className={event.spotsLeft > 20 ? 'available' : event.spotsLeft > 0 ? 'limited' : 'sold-out'}>
-                    {event.spotsLeft > 0 ? `${event.spotsLeft} seats available` : 'Sold Out'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="booking-form">
-              <h3>Select Number of Tickets</h3>
-              
-              <div className="quantity-selector">
-                <button 
-                  className="qty-btn"
-                  onClick={() => handleQuantityChange(-1)}
-                  disabled={quantity <= 1}
-                >
-                  <MinusIcon size={20} />
-                </button>
-                <div className="qty-display">
-                  <input 
-                    type="number" 
-                    min="1" 
-                    max={event.spotsLeft}
-                    value={quantity}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value);
-                      if (val > 0 && val <= event.spotsLeft) setQuantity(val);
-                    }}
-                    className="qty-input"
-                  />
-                  <span className="qty-label">Ticket{quantity > 1 ? 's' : ''}</span>
-                </div>
-                <button 
-                  className="qty-btn"
-                  onClick={() => handleQuantityChange(1)}
-                  disabled={quantity >= event.spotsLeft}
-                >
-                  <PlusIcon size={20} />
-                </button>
-              </div>
-
-              <div className="booking-summary">
-                <div className="summary-row">
-                  <span>Ticket Price</span>
-                  <span>Rs. {price.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-                </div>
-                <div className="summary-row">
-                  <span>Quantity</span>
-                  <span>{quantity}</span>
-                </div>
-                <div className="summary-row total">
-                  <span>Total Amount</span>
-                  <span>Rs. {totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-                </div>
-              </div>
-
-              <div className="terms">
-                <input type="checkbox" id="terms" />
-                <label htmlFor="terms">
-                  I agree to the <strong>terms and conditions</strong>
-                </label>
-              </div>
-
-              <div className="booking-actions">
-                <button 
-                  className="btn btn-secondary"
-                  onClick={onClose}
-                >
-                  Cancel
-                </button>
-                <button 
-                  className="btn btn-primary"
-                  onClick={() => setStep('payment')}
-                  disabled={quantity <= 0}
-                >
-                  Proceed to Payment
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="booking-step-payment">
-            <PaymentGateway 
-              amount={totalAmount}
-              eventTitle={`${quantity} Ticket${quantity > 1 ? 's' : ''} - ${event.title}`}
-              onSuccess={handlePaymentSuccess}
-              onCancel={() => setStep('quantity')}
-              loading={bookingInProgress}
-            />
+        {/* Error Banner */}
+        {localError && (
+          <div className="booking-error-banner">
+            <span>{localError}</span>
+            <button
+              className="error-close"
+              onClick={() => setLocalError('')}
+            >
+              ×
+            </button>
           </div>
         )}
+
+        {/* Loading Overlay */}
+        {loading && (
+          <div className="booking-loading">
+            <div className="spinner"></div>
+            <p>Please wait...</p>
+          </div>
+        )}
+
+        {/* Step Indicator */}
+        {currentStep !== 'confirmation' && (
+          <div className="booking-steps">
+            {stepLabels.slice(0, 4).map((label, idx) => (
+              <div
+                key={idx}
+                className={`step ${idx === currentIndex ? 'active' : idx < currentIndex ? 'done' : ''}`}
+              >
+                <span className="step-number">{idx + 1}</span>
+                <span className="step-label">{label}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Step Content */}
+        <div className="booking-step-content">
+          {renderStep()}
+        </div>
       </div>
     </div>
   );

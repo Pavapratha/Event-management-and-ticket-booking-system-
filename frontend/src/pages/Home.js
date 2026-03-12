@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import { useAuth } from '../hooks/useAuth';
 import { HeroSection } from '../components/HeroSection';
 import { EventCard, EventCardSkeleton } from '../components/EventCard';
-import { BookingModal } from '../components/BookingModal';
 import { 
   ArrowRightIcon, 
   MusicIcon, 
@@ -50,11 +48,11 @@ const transformEvent = (event, isFeatured = false) => {
   };
 };
 
-const categories = [
-  { name: 'Concerts', icon: MusicIcon, count: 245, color: '#ec4899' },
-  { name: 'Festivals', icon: PartyPopperIcon, count: 89, color: '#f97316' },
-  { name: 'Conferences', icon: GraduationCapIcon, count: 156, color: '#3b82f6' },
-  { name: 'Exhibitions', icon: CameraIcon, count: 78, color: '#22c55e' },
+const categoryDefs = [
+  { name: 'Concerts', icon: MusicIcon, color: '#ec4899' },
+  { name: 'Festivals', icon: PartyPopperIcon, color: '#f97316' },
+  { name: 'Conferences', icon: GraduationCapIcon, color: '#3b82f6' },
+  { name: 'Exhibitions', icon: CameraIcon, color: '#22c55e' },
 ];
 
 const features = [
@@ -108,17 +106,12 @@ const testimonials = [
 ];
 
 export const Home = () => {
-  const { user } = useAuth();
+  const navigate = useNavigate();
   const [featuredEvents, setFeaturedEvents] = useState([]);
   const [upcomingEvents, setUpcomingEvents] = useState([]);
-  const [homeStats, setHomeStats] = useState([
-    { value: '0', label: 'Events Listed' },
-    { value: '0', label: 'Tickets Sold' },
-    { value: '0', label: 'Active Users' },
-    { value: '99%', label: 'Happy Customers' },
-  ]);
+  const [homeStats, setHomeStats] = useState([]);
+  const [categories, setCategories] = useState(categoryDefs.map(c => ({ ...c, count: 0 })));
   const [loading, setLoading] = useState(true);
-  const [selectedEventForBooking, setSelectedEventForBooking] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -143,6 +136,17 @@ export const Home = () => {
           const ticketsSold = allBookings
             .filter(b => b.status !== 'cancelled')
             .reduce((sum, b) => sum + b.ticketQuantity, 0);
+
+          // Compute category counts from real data
+          const catCounts = {};
+          events.forEach(e => {
+            const cat = (e.category || '').toLowerCase();
+            catCounts[cat] = (catCounts[cat] || 0) + 1;
+          });
+          setCategories(categoryDefs.map(c => ({
+            ...c,
+            count: catCounts[c.name.toLowerCase()] || 0,
+          })));
 
           setHomeStats([
             { value: events.length.toString(), label: 'Events Listed' },
@@ -190,7 +194,7 @@ export const Home = () => {
                   </div>
                   <div className="category-info">
                     <h3 className="category-name">{category.name}</h3>
-                    <p className="category-count">{category.count} events</p>
+                    <p className="category-count">{category.count} event{category.count !== 1 ? 's' : ''}</p>
                   </div>
                   <ArrowRightIcon size={20} className="category-arrow" />
                 </Link>
@@ -219,20 +223,12 @@ export const Home = () => {
               [...Array(4)].map((_, i) => <EventCardSkeleton key={i} variant="featured" />)
             ) : featuredEvents.length > 0 ? (
               featuredEvents.map((event) => (
-                <div
+                <EventCard
                   key={event.id}
-                  onClick={() => {
-                    if (user) {
-                      setSelectedEventForBooking(event);
-                    } else {
-                      alert('Please log in to book tickets');
-                      window.location.href = '/login';
-                    }
-                  }}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <EventCard event={event} variant="featured" />
-                </div>
+                  event={event}
+                  variant="featured"
+                  onClick={() => navigate(`/events/${event.id}`)}
+                />
               ))
             ) : (
               <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -287,20 +283,11 @@ export const Home = () => {
               [...Array(4)].map((_, i) => <EventCardSkeleton key={i} />)
             ) : upcomingEvents.length > 0 ? (
               upcomingEvents.map((event) => (
-                <div
+                <EventCard
                   key={event.id}
-                  onClick={() => {
-                    if (user) {
-                      setSelectedEventForBooking(event);
-                    } else {
-                      alert('Please log in to book tickets');
-                      window.location.href = '/login';
-                    }
-                  }}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <EventCard event={event} />
-                </div>
+                  event={event}
+                  onClick={() => navigate(`/events/${event.id}`)}
+                />
               ))
             ) : (
               <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -383,17 +370,6 @@ export const Home = () => {
         </div>
       </section>
 
-      {/* Booking Modal */}
-      {selectedEventForBooking && (
-        <BookingModal
-          event={selectedEventForBooking}
-          onClose={() => setSelectedEventForBooking(null)}
-          onBookingSuccess={() => {
-            // Refresh events after successful booking
-            setSelectedEventForBooking(null);
-          }}
-        />
-      )}
     </div>
   );
 };

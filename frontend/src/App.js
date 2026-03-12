@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { BookingProvider } from './context/BookingContext';
 import { useAuth } from './hooks/useAuth';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
@@ -8,6 +9,7 @@ import { EmailVerification } from './pages/EmailVerification';
 import { ResendVerification } from './pages/ResendVerification';
 import { Dashboard } from './pages/Dashboard';
 import { Events } from './pages/Events';
+import { EventDetails } from './pages/EventDetails';
 import { Home } from './pages/Home';
 import { MyTickets } from './pages/MyTickets';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -55,6 +57,14 @@ const AppRoutes = () => {
         element={
           <PublicLayout>
             <Events />
+          </PublicLayout>
+        } 
+      />
+      <Route 
+        path="/events/:id" 
+        element={
+          <PublicLayout>
+            <EventDetails />
           </PublicLayout>
         } 
       />
@@ -133,7 +143,9 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <AppRoutes />
+        <BookingProvider>
+          <AppRoutes />
+        </BookingProvider>
       </AuthProvider>
     </Router>
   );

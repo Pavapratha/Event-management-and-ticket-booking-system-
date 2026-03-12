@@ -17,23 +17,67 @@ const bookingSchema = new mongoose.Schema(
       ref: 'Event',
       required: true,
     },
+    ticketDetails: [
+      {
+        categoryId: {
+          type: String,
+          required: true,
+        },
+        categoryName: {
+          type: String,
+          required: true,
+        },
+        price: {
+          type: Number,
+          required: true,
+        },
+        quantity: {
+          type: Number,
+          required: true,
+          min: 1,
+        },
+        subtotal: {
+          type: Number,
+          required: true,
+        },
+      },
+    ],
     ticketQuantity: {
       type: Number,
       required: true,
       min: 1,
     },
+    subtotalAmount: {
+      type: Number,
+      required: true,
+    },
+    bookingFee: {
+      type: Number,
+      default: 100,
+    },
     totalAmount: {
       type: Number,
       required: true,
     },
+    pickupOption: {
+      type: String,
+      enum: ['box-office'],
+      default: 'box-office',
+    },
     status: {
       type: String,
       enum: ['pending', 'confirmed', 'cancelled'],
-      default: 'confirmed',
+      default: 'pending',
     },
     qrCode: {
       type: String,
       default: '',
+    },
+    paymentDetails: {
+      transactionId: String,
+      method: String,
+      status: String,
+      cardLast4: String,
     },
   },
   {
@@ -42,3 +86,4 @@ const bookingSchema = new mongoose.Schema(
 );
 
 module.exports = mongoose.model('Booking', bookingSchema);
+

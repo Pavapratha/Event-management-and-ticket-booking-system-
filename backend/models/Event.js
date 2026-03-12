@@ -1,5 +1,27 @@
 const mongoose = require('mongoose');
 
+const ticketCategorySchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+  },
+  price: {
+    type: Number,
+    required: true,
+    min: 0,
+  },
+  totalQuantity: {
+    type: Number,
+    required: true,
+    min: 1,
+  },
+  availableQuantity: {
+    type: Number,
+    required: true,
+    min: 0,
+  },
+});
+
 const eventSchema = new mongoose.Schema(
   {
     title: {
@@ -28,6 +50,10 @@ const eventSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Event location is required'],
     },
+    venue: {
+      type: String,
+      default: '',
+    },
     price: {
       type: Number,
       required: [true, 'Ticket price is required'],
@@ -42,9 +68,14 @@ const eventSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    ticketCategories: [ticketCategorySchema],
     image: {
       type: String,
       default: '',
+    },
+    pickupInstructions: {
+      type: String,
+      default: 'Please collect your tickets from the box office 30 minutes before the event starts.',
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,

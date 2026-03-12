@@ -6,7 +6,8 @@ import './EventCard.css';
 export const EventCard = ({ 
   event,
   variant = 'default', // 'default', 'featured', 'compact', 'horizontal'
-  showActions = true 
+  showActions = true,
+  onClick = null // Optional click handler for booking modal
 }) => {
   const [isLiked, setIsLiked] = useState(false);
 
@@ -34,9 +35,33 @@ export const EventCard = ({
     setIsLiked(!isLiked);
   };
 
+  // If onClick is provided, render as a clickable div instead of a Link
+  const handleCardClick = (e) => {
+    if (onClick) {
+      console.log('[EventCard] Click detected, triggering onClick handler', { eventId: event.id, eventTitle: event.title });
+      onClick(e);
+    }
+  };
+
+  const cardProps = onClick ? {
+    onClick: handleCardClick,
+    role: 'button',
+    tabIndex: '0',
+    style: { cursor: 'pointer' },
+    onKeyDown: (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        console.log('[EventCard] Keyboard Enter/Space detected');
+        onClick(e);
+      }
+    }
+  } : {};
+
+  const CardWrapper = onClick ? 'div' : Link;
+  const wrapperProps = onClick ? cardProps : { to: `/events/${id}` };
+
   if (variant === 'horizontal') {
     return (
-      <Link to={`/events/${id}`} className="event-card event-card-horizontal">
+      <CardWrapper {...wrapperProps} className="event-card event-card-horizontal">
         <div className="event-card-image">
           {image ? (
             <img src={image} alt={title} />
@@ -91,13 +116,13 @@ export const EventCard = ({
             <HeartIcon size={18} filled={isLiked} />
           </button>
         )}
-      </Link>
+      </CardWrapper>
     );
   }
 
   if (variant === 'compact') {
     return (
-      <Link to={`/events/${id}`} className="event-card event-card-compact">
+      <CardWrapper {...wrapperProps} className="event-card event-card-compact">
         <div className="event-card-image">
           {image ? (
             <img src={image} alt={title} />
@@ -116,13 +141,13 @@ export const EventCard = ({
           </div>
           <span className="event-price">{price}</span>
         </div>
-      </Link>
+      </CardWrapper>
     );
   }
 
   if (variant === 'featured') {
     return (
-      <Link to={`/events/${id}`} className="event-card event-card-featured">
+      <CardWrapper {...wrapperProps} className="event-card event-card-featured">
         <div className="event-card-image">
           {image ? (
             <img src={image} alt={title} />
@@ -200,13 +225,13 @@ export const EventCard = ({
             )}
           </div>
         </div>
-      </Link>
+      </CardWrapper>
     );
   }
 
   // Default variant
   return (
-    <Link to={`/events/${id}`} className="event-card">
+    <CardWrapper {...wrapperProps} className="event-card">
       <div className="event-card-image">
         {image ? (
           <img src={image} alt={title} />
@@ -267,7 +292,7 @@ export const EventCard = ({
           <button className="btn btn-primary btn-sm">Book Now</button>
         </div>
       </div>
-    </Link>
+    </CardWrapper>
   );
 };
 

@@ -54,6 +54,37 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+
+// Function to start server with port fallback logic
+function startServer(port, maxRetries = 5) {
+  const server = app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+  });
+
+  // Handle port already in use error
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.warn(`\n⚠️  Port ${port} is already in use. Trying port ${port + 1}...\n`);
+      
+      if (port - PORT < maxRetries - 1) {
+        // Try next port
+        server.close();
+        startServer(port + 1, maxRetries);
+      } else {
+        console.error(`\n❌ Failed to find an available port after ${maxRetries} attempts.`);
+        console.error(`   Port range tried: ${PORT} - ${port}`);
+        console.error(`   Please kill the process using port ${PORT} and try again.`);
+        console.error(`   Use: Get-Process -Id (Get-NetTCPConnection -LocalPort ${PORT}).OwningProcess | Stop-Process -Force\n`);
+        process.exit(1);
+      }
+    } else {
+      console.error('Server error:', err);
+      process.exit(1);
+    }
+  });
+
+  return server;
+}
+
+// Start the server
+startServer(PORT);

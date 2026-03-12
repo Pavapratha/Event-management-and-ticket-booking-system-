@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { PageContainer, Section, Card } from '../components/Layout';
+import { QRCodeDisplay } from '../components/QRCodeDisplay';
 import { QrCodeIcon, XIcon } from '../components/Icons';
 
 
@@ -11,51 +12,67 @@ export const MyTickets = () => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('upcoming'); // upcoming or past
+  const [expandedQR, setExpandedQR] = useState(null); // bookingId of expanded QR
+  const [cancellingId, setCancellingId] = useState(null);
+
+  const fetchTickets = async () => {
+    try {
+      const res = await api.get('/api/bookings');
+      const allBookings = res.data.bookings || [];
+      
+      // Transform bookings to ticket format
+      const now = new Date();
+      const formattedTickets = allBookings
+        .filter(b => b.status !== 'cancelled')
+        .map(booking => ({
+          id: booking._id,
+          bookingId: booking.bookingId,
+          eventName: booking.eventId?.title || 'Unknown Event',
+          date: new Date(booking.eventId?.date).toLocaleDateString('en-US', { 
+            weekday: 'long',
+            month: 'long', 
+            day: 'numeric', 
+            year: 'numeric' 
+          }),
+          time: booking.eventId?.time || 'TBD',
+          location: booking.eventId?.location || 'TBD',
+          image: booking.eventId?.image ? `${API_BASE}${booking.eventId.image}` : null,
+          quantity: booking.ticketQuantity,
+          totalAmount: booking.totalAmount,
+          eventDate: new Date(booking.eventId?.date),
+          status: booking.status,
+          qrCode: booking.qrCode || '',
+          isPast: new Date(booking.eventId?.date) < now
+        }))
+        .sort((a, b) => b.eventDate - a.eventDate);
+
+      setTickets(formattedTickets);
+    } catch (err) {
+      console.error('Failed to fetch tickets:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchTickets = async () => {
-      try {
-        const res = await api.get('/api/user/bookings');
-        const allBookings = res.data.bookings || [];
-        
-        // Transform bookings to ticket format
-        const now = new Date();
-        const formattedTickets = allBookings
-          .filter(b => b.status !== 'cancelled')
-          .map(booking => ({
-            id: booking._id,
-            bookingId: booking.bookingId,
-            eventName: booking.eventId?.title || 'Unknown Event',
-            date: new Date(booking.eventId?.date).toLocaleDateString('en-US', { 
-              weekday: 'long',
-              month: 'long', 
-              day: 'numeric', 
-              year: 'numeric' 
-            }),
-            time: booking.eventId?.time || 'TBD',
-            location: booking.eventId?.location || 'TBD',
-            image: booking.eventId?.image ? `${API_BASE}${booking.eventId.image}` : 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=100&h=100&fit=crop',
-            quantity: booking.ticketQuantity,
-            totalAmount: booking.totalAmount,
-            eventDate: new Date(booking.eventId?.date),
-            status: booking.status,
-            isPast: new Date(booking.eventId?.date) < now
-          }))
-          .sort((a, b) => b.eventDate - a.eventDate);
-
-        setTickets(formattedTickets);
-      } catch (err) {
-        console.error('Failed to fetch tickets:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchTickets();
-    // Refresh every 20 seconds
     const interval = setInterval(fetchTickets, 20000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleCancelBooking = async (ticketId) => {
+    if (!window.confirm('Are you sure you want to cancel this booking?')) return;
+    setCancellingId(ticketId);
+    try {
+      await api.delete(`/api/bookings/${ticketId}`);
+      await fetchTickets();
+    } catch (err) {
+      console.error('Failed to cancel booking:', err);
+      alert('Failed to cancel booking. Please try again.');
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   const filteredTickets = tickets.filter(ticket => {
     if (filter === 'upcoming') return !ticket.isPast;
@@ -113,7 +130,11 @@ export const MyTickets = () => {
             {filteredTickets.map((ticket) => (
               <Card key={ticket.id} className="ticket-card">
                 <div className="ticket-image-container">
-                  <img src={ticket.image} alt={ticket.eventName} className="ticket-image" />
+                  {ticket.image ? (
+                    <img src={ticket.image} alt={ticket.eventName} className="ticket-image" />
+                  ) : (
+                    <div className="ticket-image ticket-image-placeholder">🎫</div>
+                  )}
                   {ticket.isPast && <div className="ticket-badge-past">Past Event</div>}
                 </div>
                 <div className="ticket-content">
@@ -140,17 +161,39 @@ export const MyTickets = () => {
                       <span className="booking-id">{ticket.bookingId}</span>
                     </div>
                   </div>
+
+                  {/* QR Code Section (toggled) */}
+                  {expandedQR === ticket.id && (
+                    <div className="ticket-qr-section" style={{ marginTop: '1rem', padding: '1rem', background: '#f8fafc', borderRadius: 8, textAlign: 'center' }}>
+                      <QRCodeDisplay qrCode={ticket.qrCode} bookingId={ticket.bookingId} size={180} />
+                      <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.5rem' }}>
+                        Show this QR code at the venue box office
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <div className="ticket-actions">
-                  {!ticket.isPast && (
+                  {!ticket.isPast && ticket.status === 'confirmed' && (
                     <>
-                      <button className="btn btn-secondary btn-sm">
-                        <QrCodeIcon width={16} height={16} /> View QR
+                      <button
+                        className={`btn btn-secondary btn-sm ${expandedQR === ticket.id ? 'active' : ''}`}
+                        onClick={() => setExpandedQR(expandedQR === ticket.id ? null : ticket.id)}
+                      >
+                        <QrCodeIcon width={16} height={16} /> {expandedQR === ticket.id ? 'Hide QR' : 'View QR'}
                       </button>
-                      <button className="btn btn-danger btn-sm">
-                        <XIcon width={16} height={16} /> Cancel
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => handleCancelBooking(ticket.id)}
+                        disabled={cancellingId === ticket.id}
+                      >
+                        <XIcon width={16} height={16} /> {cancellingId === ticket.id ? 'Cancelling...' : 'Cancel'}
                       </button>
                     </>
+                  )}
+                  {!ticket.isPast && ticket.status === 'pending' && (
+                    <span className="badge badge-warning" style={{ padding: '0.25rem 0.75rem', borderRadius: 12, background: '#fef3c7', color: '#92400e', fontSize: '0.8rem' }}>
+                      Payment Pending
+                    </span>
                   )}
                   {ticket.isPast && (
                     <button className="btn btn-secondary btn-sm disabled">

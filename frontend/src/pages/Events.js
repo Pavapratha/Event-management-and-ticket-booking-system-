@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useSmartEventRefresh } from '../hooks/useEventRefresh';
-import { useAuth } from '../hooks/useAuth';
 import { EventCard, EventCardSkeleton } from '../components/EventCard';
-import { BookingModal } from '../components/BookingModal';
 import { 
   SearchIcon, 
   FilterIcon, 
@@ -39,6 +37,7 @@ const transformEvent = (event) => {
 
   return {
     id: event._id,
+    _id: event._id, // Include _id for API calls
     title: event.title,
     date: formattedDate,
     time: event.time,
@@ -51,12 +50,17 @@ const transformEvent = (event) => {
     spotsLeft,
     attendees: soldSeats,
     isHot: spotsLeft < 20 && spotsLeft > 0,
+    // Include all raw properties needed for booking flow
+    ticketCategories: event.ticketCategories || [],
+    availableSeats: event.availableSeats,
+    totalSeats: event.totalSeats,
+    description: event.description,
     _raw: event,
   };
 };
 
 export const Events = () => {
-  const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [allEvents, setAllEvents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -66,7 +70,6 @@ export const Events = () => {
   const [sortBy, setSortBy] = useState('date');
   const [viewMode, setViewMode] = useState('grid');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [selectedEventForBooking, setSelectedEventForBooking] = useState(null);
 
   // Transform and set events when raw events change
   const setAllEventsTransformed = (rawEvents) => {
@@ -75,22 +78,8 @@ export const Events = () => {
   };
 
   // Fetch events from API with auto-refresh every 30 seconds
-  // This ensures user sees updates when admin creates/updates/deletes events
-  const { refetch: refreshEvents } = useSmartEventRefresh(setAllEventsTransformed, 30000);
-
-  // Manual refresh for immediate update (called when user actions happen)
-  const manualRefresh = async () => {
-    setIsLoading(true);
-    try {
-      const res = await api.get('/api/events');
-      const events = (res.data.events || []).map(transformEvent);
-      setAllEvents(events);
-    } catch (err) {
-      console.error('Failed to fetch events:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // This ensures updates when admin creates/updates/deletes events
+  useSmartEventRefresh(setAllEventsTransformed, 30000);
 
   // Legacy effect - can be removed if using hook
   useEffect(() => {
@@ -355,23 +344,12 @@ export const Events = () => {
           ) : filteredEvents.length > 0 ? (
             <div className={`events-grid ${viewMode === 'list' ? 'events-list' : ''}`}>
               {filteredEvents.map((event) => (
-                <div 
+                <EventCard
                   key={event.id}
-                  onClick={() => {
-                    if (user) {
-                      setSelectedEventForBooking(event);
-                    } else {
-                      alert('Please log in to book tickets');
-                      window.location.href = '/login';
-                    }
-                  }}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <EventCard
-                    event={event}
-                    variant={viewMode === 'list' ? 'horizontal' : 'default'}
-                  />
-                </div>
+                  event={event}
+                  variant={viewMode === 'list' ? 'horizontal' : 'default'}
+                  onClick={() => navigate(`/events/${event.id}`)}
+                />
               ))}
             </div>
           ) : (
@@ -395,17 +373,6 @@ export const Events = () => {
           )}
         </div>
       </div>
-
-      {/* Booking Modal */}
-      {selectedEventForBooking && (
-        <BookingModal
-          event={selectedEventForBooking}
-          onClose={() => setSelectedEventForBooking(null)}
-          onBookingSuccess={() => {
-            refreshEvents();
-          }}
-        />
-      )}
     </div>
   );
 };
