@@ -73,6 +73,19 @@ const bookingSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    isUsed: {
+      type: Boolean,
+      default: false,
+    },
+    usedAt: {
+      type: Date,
+      default: null,
+    },
+    validatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
     paymentDetails: {
       transactionId: String,
       method: String,

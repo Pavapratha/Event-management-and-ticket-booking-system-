@@ -32,6 +32,7 @@ const {
   getBookingById,
   cancelBooking,
   updateBookingStatus,
+  validateQRCode,
 } = require('../controllers/bookingController');
 const { getDashboardStats, getReports, getEventReportData, downloadEventCSV, downloadEventPDF } = require('../controllers/reportController');
 const {
@@ -66,6 +67,7 @@ router.get('/bookings', adminProtect, getAllBookings);
 router.get('/bookings/:id', adminProtect, getBookingById);
 router.put('/bookings/:id/cancel', adminProtect, cancelBooking);
 router.put('/bookings/:id/status', adminProtect, updateBookingStatus);
+router.post('/bookings/qrcode/validate', adminProtect, validateQRCode);
 
 // Payments
 router.get('/payments', adminProtect, getPayments);

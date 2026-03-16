@@ -10,6 +10,7 @@ import EditEvent from './pages/EditEvent';
 import Bookings from './pages/Bookings';
 import BookingDetails from './pages/BookingDetails';
 import Tickets from './pages/Tickets';
+import QRValidation from './pages/QRValidation';
 import Payments from './pages/Payments';
 import Reports from './pages/Reports';
 import Notifications from './pages/Notifications';
@@ -48,6 +49,7 @@ function App() {
             <Route path="bookings" element={<Bookings />} />
             <Route path="bookings/:id" element={<BookingDetails />} />
             <Route path="tickets" element={<Tickets />} />
+            <Route path="validate-qr" element={<QRValidation />} />
             <Route path="payments" element={<Payments />} />
             <Route path="reports" element={<Reports />} />
             <Route path="users" element={<Users />} />

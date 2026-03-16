@@ -364,3 +364,93 @@ exports.updateBookingStatus = async (req, res) => {
   }
 };
 
+// @desc    Validate QR code at venue entry
+// @route   POST /api/bookings/qrcode/validate
+// @access  Admin (venue staff)
+exports.validateQRCode = async (req, res) => {
+  try {
+    const { bookingId, qrCode } = req.body;
+
+    if (!bookingId && !qrCode) {
+      return res.status(400).json({
+        success: false,
+        message: 'Booking ID or QR code is required',
+      });
+    }
+
+    let booking;
+
+    if (bookingId) {
+      // Search by booking ID
+      booking = await Booking.findOne({ bookingId })
+        .populate('userId', 'name email phone')
+        .populate('eventId', 'title date time location venue');
+    } else if (qrCode) {
+      // If QR code is provided, it contains the booking data
+      try {
+        const qrData = JSON.parse(qrCode);
+        booking = await Booking.findOne({ bookingId: qrData.bookingId })
+          .populate('userId', 'name email phone')
+          .populate('eventId', 'title date time location venue');
+      } catch (parseError) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid QR code format',
+        });
+      }
+    }
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found',
+      });
+    }
+
+    // Check if booking is confirmed
+    if (booking.status !== 'confirmed') {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot validate ticket. Booking status is ${booking.status}`,
+      });
+    }
+
+    // Check if ticket has already been used
+    if (booking.isUsed) {
+      return res.status(400).json({
+        success: false,
+        message: 'This ticket has already been used',
+        usedAt: booking.usedAt,
+      });
+    }
+
+    // Mark ticket as used
+    booking.isUsed = true;
+    booking.usedAt = new Date();
+    booking.validatedBy = req.userId; // Admin/staff ID
+    await booking.save();
+
+    res.json({
+      success: true,
+      message: 'Ticket validated successfully',
+      booking: {
+        bookingId: booking.bookingId,
+        userName: booking.userId.name,
+        userEmail: booking.userId.email,
+        userPhone: booking.userId.phone,
+        eventTitle: booking.eventId.title,
+        eventDate: booking.eventId.date,
+        eventTime: booking.eventId.time,
+        eventVenue: booking.eventId.venue,
+        ticketQuantity: booking.ticketQuantity,
+        totalAmount: booking.totalAmount,
+        validatedAt: booking.usedAt,
+        ticketDetails: booking.ticketDetails,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
