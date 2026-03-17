@@ -12,7 +12,6 @@ import BookingDetails from './pages/BookingDetails';
 import Tickets from './pages/Tickets';
 import QRValidation from './pages/QRValidation';
 import Payments from './pages/Payments';
-import Reports from './pages/Reports';
 import Notifications from './pages/Notifications';
 import Users from './pages/Users';
 import Categories from './pages/Categories';
@@ -51,7 +50,6 @@ function App() {
             <Route path="tickets" element={<Tickets />} />
             <Route path="validate-qr" element={<QRValidation />} />
             <Route path="payments" element={<Payments />} />
-            <Route path="reports" element={<Reports />} />
             <Route path="users" element={<Users />} />
             <Route path="categories" element={<Categories />} />
             <Route path="feedback" element={<AdminFeedback />} />

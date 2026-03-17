@@ -32,7 +32,7 @@ const {
   updateBookingStatus,
   validateQRCode,
 } = require('../controllers/bookingController');
-const { getDashboardStats, getReports, getEventReportData, downloadEventCSV, downloadEventPDF } = require('../controllers/reportController');
+const { getDashboardStats, downloadEventCSV, downloadEventPDF } = require('../controllers/reportController');
 const {
   getAllNotifications,
   createNotification,
@@ -69,9 +69,6 @@ router.post('/bookings/qrcode/validate', adminProtect, validateQRCode);
 
 // Payments
 router.get('/payments', adminProtect, getPayments);
-
-// Reports
-router.get('/reports', adminProtect, getReports);
 
 // Notifications
 router.get('/notifications', adminProtect, getAllNotifications);

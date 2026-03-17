@@ -54,10 +54,6 @@ function Login() {
             <span>🎟️</span>
             <span>Booking & Ticket Control</span>
           </div>
-          <div className="feature-item">
-            <span>📈</span>
-            <span>Revenue Reports & Charts</span>
-          </div>
         </div>
       </div>
 
