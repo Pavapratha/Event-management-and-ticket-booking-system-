@@ -12,6 +12,7 @@ import { Events } from './pages/Events';
 import { EventDetails } from './pages/EventDetails';
 import { Home } from './pages/Home';
 import { MyTickets } from './pages/MyTickets';
+import { Notifications } from './pages/Notifications';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
@@ -124,6 +125,16 @@ const AppRoutes = () => {
           <ProtectedRoute>
             <ProtectedLayout>
               <MyTickets />
+            </ProtectedLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notifications"
+        element={
+          <ProtectedRoute>
+            <ProtectedLayout>
+              <Notifications />
             </ProtectedLayout>
           </ProtectedRoute>
         }

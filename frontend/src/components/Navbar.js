@@ -6,6 +6,7 @@ import {
   XIcon, 
   HomeIcon, 
   CalendarIcon, 
+  MailIcon,
   TicketIcon, 
   UserIcon, 
   LogOutIcon,
@@ -47,6 +48,7 @@ export const Navbar = () => {
     { path: '/', label: 'Home', icon: HomeIcon },
     { path: '/events', label: 'Events', icon: CalendarIcon },
     { path: '/my-tickets', label: 'My Tickets', icon: TicketIcon },
+    ...(user ? [{ path: '/notifications', label: 'Notifications', icon: MailIcon }] : []),
   ];
 
   return (
@@ -105,6 +107,10 @@ export const Navbar = () => {
                     <Link to="/my-tickets" className="dropdown-item">
                       <TicketIcon size={16} />
                       My Tickets
+                    </Link>
+                    <Link to="/notifications" className="dropdown-item">
+                      <MailIcon size={16} />
+                      Notifications
                     </Link>
                     <Link to="/profile" className="dropdown-item">
                       <UserIcon size={16} />
@@ -182,6 +188,10 @@ export const Navbar = () => {
                 <Link to="/dashboard" className="mobile-nav-link">
                   <HomeIcon size={20} />
                   Dashboard
+                </Link>
+                <Link to="/notifications" className="mobile-nav-link">
+                  <MailIcon size={20} />
+                  Notifications
                 </Link>
                 <Link to="/profile" className="mobile-nav-link">
                   <UserIcon size={20} />

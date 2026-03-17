@@ -524,6 +524,38 @@
   cursor: pointer;
 }
 
+.booking-success-banner {
+  background: #dcfce7;
+  border-left: 4px solid #16a34a;
+  padding: 16px;
+  color: #166534;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.success-close {
+  background: none;
+  border: none;
+  color: #166534;
+  font-size: 20px;
+  cursor: pointer;
+}
+
 .booking-error {
   background: #fee2e2;
   border: 1px solid #fca5a5;

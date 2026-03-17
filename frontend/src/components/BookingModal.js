@@ -32,6 +32,8 @@ export const BookingModal = ({ eventId, onClose, onBookingSuccess }) => {
   const [fetchError, setFetchError] = useState('');
   const [localError, setLocalError] = useState('');
   const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [userEmail, setUserEmail] = useState('');
 
   // Fetch event data by ID
   useEffect(() => {
@@ -165,6 +167,17 @@ export const BookingModal = ({ eventId, onClose, onBookingSuccess }) => {
 
       const data = await response.json();
       setBooking(data.booking);
+      
+      // Extract user email for success message
+      const email = data.booking.userId?.email || localStorage.getItem('userEmail') || 'your email';
+      setUserEmail(email);
+      setSuccessMessage(`✅ Booking confirmed! A confirmation email has been sent to ${email}`);
+      
+      // Auto-hide success message after 5 seconds
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 5000);
+      
       setCurrentStep('confirmation');
 
       if (onBookingSuccess) {
@@ -320,6 +333,19 @@ export const BookingModal = ({ eventId, onClose, onBookingSuccess }) => {
             <button
               className="error-close"
               onClick={() => setLocalError('')}
+            >
+              ×
+            </button>
+          </div>
+        )}
+
+        {/* Success Banner */}
+        {successMessage && (
+          <div className="booking-success-banner">
+            <span>{successMessage}</span>
+            <button
+              className="success-close"
+              onClick={() => setSuccessMessage('')}
             >
               ×
             </button>

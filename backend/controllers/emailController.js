@@ -1,5 +1,130 @@
 const transporter = require('../config/email');
 
+const formatEventDate = (eventDate) => {
+  if (!eventDate) {
+    return 'TBD';
+  }
+
+  return new Date(eventDate).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+
+const getEventLocation = (event) => event?.location || event?.venue || 'TBD';
+
+const buildBookingConfirmationText = (booking) => {
+  const userName = booking.userId?.name || 'Customer';
+  const eventName = booking.eventId?.title || 'Event';
+  const eventDate = formatEventDate(booking.eventId?.date);
+  const eventTime = booking.eventId?.time || 'TBD';
+  const eventLocation = getEventLocation(booking.eventId);
+
+  return `Hello ${userName},
+
+Your ticket for ${eventName} has been successfully booked.
+
+Event Details:
+Event: ${eventName}
+Date: ${eventDate}
+Time: ${eventTime}
+Location: ${eventLocation}
+
+Booking ID: ${booking.bookingId || booking._id}
+
+Thank you for booking with us!`;
+};
+
+const buildBookingConfirmationHtml = (booking) => {
+  const userName = booking.userId?.name || 'Customer';
+  const eventName = booking.eventId?.title || 'Event';
+  const eventDate = formatEventDate(booking.eventId?.date);
+  const eventTime = booking.eventId?.time || 'TBD';
+  const eventLocation = getEventLocation(booking.eventId);
+
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Event Booking Confirmation</title>
+      <style>
+        body {
+          margin: 0;
+          padding: 24px;
+          background: #f8fafc;
+          color: #0f172a;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .card {
+          max-width: 640px;
+          margin: 0 auto;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+        }
+        .header {
+          padding: 28px 32px;
+          background: linear-gradient(135deg, #ea580c, #fb923c);
+          color: #ffffff;
+        }
+        .header h1 {
+          margin: 0;
+          font-size: 28px;
+        }
+        .body {
+          padding: 32px;
+          line-height: 1.7;
+        }
+        .details {
+          margin: 24px 0;
+          padding: 20px;
+          border-radius: 12px;
+          background: #fff7ed;
+          border: 1px solid #fdba74;
+        }
+        .details p {
+          margin: 0 0 8px;
+        }
+        .footer {
+          padding: 0 32px 32px;
+          color: #475569;
+          font-size: 14px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <div class="header">
+          <h1>Event Booking Confirmation</h1>
+        </div>
+        <div class="body">
+          <p>Hello ${userName},</p>
+          <p>Your ticket for <strong>${eventName}</strong> has been successfully booked.</p>
+
+          <div class="details">
+            <p><strong>Event:</strong> ${eventName}</p>
+            <p><strong>Date:</strong> ${eventDate}</p>
+            <p><strong>Time:</strong> ${eventTime}</p>
+            <p><strong>Location:</strong> ${eventLocation}</p>
+            <p><strong>Booking ID:</strong> ${booking.bookingId || booking._id}</p>
+          </div>
+
+          <p>Thank you for booking with us!</p>
+        </div>
+        <div class="footer">
+          This is an automated email from the Event Ticket Booking System.
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+};
+
 // @desc    Send booking confirmation email
 // @param   booking - populated booking object with userId, eventId details
 exports.sendConfirmationEmail = async (booking) => {
@@ -9,192 +134,12 @@ exports.sendConfirmationEmail = async (booking) => {
       return;
     }
 
-    const eventTitle = booking.eventId?.title || 'Event';
-    const eventDate = booking.eventId?.date || 'TBD';
-    const totalAmount = booking.totalAmount || 0;
-    const bookingId = booking.bookingId || booking._id;
-
-    // Create confirmation email HTML
-    const confirmationHTML = `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Booking Confirmation</title>
-        <style>
-          body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-          }
-          .email-container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #ffffff;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-          }
-          .email-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-          }
-          .email-header h1 {
-            margin: 0;
-            font-size: 28px;
-            font-weight: 600;
-          }
-          .email-body {
-            padding: 40px;
-          }
-          .email-body h2 {
-            color: #333;
-            font-size: 20px;
-            margin-top: 0;
-            margin-bottom: 20px;
-          }
-          .email-body p {
-            color: #666;
-            margin-bottom: 15px;
-            font-size: 14px;
-          }
-          .booking-details {
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-            padding: 20px;
-            border-radius: 6px;
-            margin: 20px 0;
-          }
-          .detail-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
-          }
-          .detail-row:last-child {
-            border-bottom: none;
-          }
-          .detail-label {
-            font-weight: 600;
-            color: #333;
-          }
-          .detail-value {
-            color: #666;
-          }
-          .total-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 15px 0;
-            border-top: 2px solid #667eea;
-            margin-top: 10px;
-          }
-          .total-label {
-            font-weight: 700;
-            color: #333;
-            font-size: 16px;
-          }
-          .total-value {
-            font-weight: 700;
-            color: #667eea;
-            font-size: 16px;
-          }
-          .ticket-section {
-            background-color: #e8f4f8;
-            border: 1px solid #b3d9e8;
-            color: #004085;
-            padding: 15px;
-            border-radius: 4px;
-            margin: 20px 0;
-            font-size: 14px;
-          }
-          .cta-button {
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 12px 30px;
-            text-decoration: none;
-            border-radius: 6px;
-            margin-top: 20px;
-            text-align: center;
-            font-weight: 600;
-          }
-          .email-footer {
-            background-color: #f9f9f9;
-            padding: 20px;
-            text-align: center;
-            border-top: 1px solid #ddd;
-          }
-          .email-footer p {
-            margin: 5px 0;
-            color: #999;
-            font-size: 12px;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="email-container">
-          <div class="email-header">
-            <h1>✅ Booking Confirmed!</h1>
-          </div>
-          <div class="email-body">
-            <h2>Thank you for your purchase, ${booking.userId.name}!</h2>
-            <p>Your booking has been successfully confirmed. Below are your booking details:</p>
-            
-            <div class="booking-details">
-              <div class="detail-row">
-                <span class="detail-label">Booking ID:</span>
-                <span class="detail-value">${bookingId}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">Event:</span>
-                <span class="detail-value">${eventTitle}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">Event Date:</span>
-                <span class="detail-value">${new Date(eventDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">Number of Tickets:</span>
-                <span class="detail-value">${booking.ticketQuantity || 'See confirmation'}</span>
-              </div>
-              <div class="total-row">
-                <span class="total-label">Total Amount:</span>
-                <span class="total-value">₹${totalAmount.toFixed(2)}</span>
-              </div>
-            </div>
-            
-            <div class="ticket-section">
-              <strong>📱 Your digital tickets are ready!</strong> You can view and download your tickets from your dashboard.
-            </div>
-            
-            <p>Please save this email for your records. You'll need your Booking ID when checking in at the event.</p>
-            
-            <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard" class="cta-button">View Your Booking</a>
-            
-            <p style="margin-top: 30px; color: #999; font-size: 13px;">
-              If you have any questions, please contact our support team.
-            </p>
-          </div>
-          <div class="email-footer">
-            <p>&copy; ${new Date().getFullYear()} Event Management System. All rights reserved.</p>
-            <p>This is an automated email. Please do not reply directly.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-
     const mailOptions = {
       from: process.env.SMTP_FROM_EMAIL,
       to: booking.userId.email,
-      subject: `Booking Confirmation - ${eventTitle}`,
-      html: confirmationHTML,
+      subject: 'Event Booking Confirmation',
+      text: buildBookingConfirmationText(booking),
+      html: buildBookingConfirmationHtml(booking),
     };
 
     // Send the email

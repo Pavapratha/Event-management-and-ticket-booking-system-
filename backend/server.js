@@ -6,6 +6,7 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const userRoutes = require('./routes/user');
+const { startEventReminderScheduler } = require('./jobs/eventReminderScheduler');
 
 const app = express();
 
@@ -14,14 +15,6 @@ console.log('🚀 Event Management Application Starting...');
 console.log('='.repeat(60));
 console.log('Mode:', process.env.NODE_ENV || 'development');
 console.log('Port:', process.env.PORT || 5000);
-
-// Connect to database
-console.log('\n📦 Connecting to database...');
-connectDB();
-
-// Import and verify email configuration
-console.log('\n📧 Loading email configuration...');
-require('./config/email');  // This will log verification results
 
 // Middleware
 app.use(express.json());
@@ -86,5 +79,18 @@ function startServer(port, maxRetries = 5) {
   return server;
 }
 
-// Start the server
-startServer(PORT);
+async function bootstrap() {
+  console.log('\n📦 Connecting to database...');
+  await connectDB();
+
+  console.log('\n📧 Loading email configuration...');
+  require('./config/email');
+
+  startEventReminderScheduler();
+  startServer(PORT);
+}
+
+bootstrap().catch((error) => {
+  console.error('Failed to start application:', error);
+  process.exit(1);
+});
