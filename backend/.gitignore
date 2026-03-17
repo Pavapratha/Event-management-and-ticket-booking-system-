@@ -25,6 +25,9 @@ Thumbs.db
 logs/
 *.log
 
+# Database backups
+backups/*.gz
+
 # Misc
 .cache/
 dist/

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { PageContainer, Section, Card } from '../components/Layout';
 import { QRCodeDisplay } from '../components/QRCodeDisplay';
-import { DownloadIcon, QrCodeIcon, XIcon } from '../components/Icons';
+import { QrCodeIcon, XIcon } from '../components/Icons';
 
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -14,7 +14,6 @@ export const MyTickets = () => {
   const [filter, setFilter] = useState('upcoming'); // upcoming or past
   const [expandedQR, setExpandedQR] = useState(null); // bookingId of expanded QR
   const [cancellingId, setCancellingId] = useState(null);
-  const [downloadingInvoiceId, setDownloadingInvoiceId] = useState(null);
 
   const fetchTickets = async () => {
     try {
@@ -28,7 +27,6 @@ export const MyTickets = () => {
         .map(booking => ({
           id: booking._id,
           bookingId: booking.bookingId,
-          invoiceNumber: booking.invoiceNumber || '',
           eventName: booking.eventId?.title || 'Unknown Event',
           date: new Date(booking.eventId?.date).toLocaleDateString('en-US', { 
             weekday: 'long',
@@ -73,34 +71,6 @@ export const MyTickets = () => {
       alert('Failed to cancel booking. Please try again.');
     } finally {
       setCancellingId(null);
-    }
-  };
-
-  const handleDownloadInvoice = async (ticket) => {
-    setDownloadingInvoiceId(ticket.id);
-
-    try {
-      const response = await api.get(`/api/bookings/${ticket.id}/invoice`, {
-        responseType: 'blob',
-      });
-
-      const contentDisposition = response.headers['content-disposition'] || '';
-      const filenameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
-      const filename = filenameMatch?.[1] || `invoice-${ticket.bookingId}.pdf`;
-
-      const blobUrl = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(blobUrl);
-    } catch (err) {
-      console.error('Failed to download invoice:', err);
-      alert('Failed to download invoice. Please try again.');
-    } finally {
-      setDownloadingInvoiceId(null);
     }
   };
 
@@ -190,12 +160,6 @@ export const MyTickets = () => {
                       <span className="info-label">🆔 Booking ID:</span>
                       <span className="booking-id">{ticket.bookingId}</span>
                     </div>
-                    {ticket.invoiceNumber && (
-                      <div className="info-item">
-                        <span className="info-label">🧾 Invoice:</span>
-                        <span className="booking-id">{ticket.invoiceNumber}</span>
-                      </div>
-                    )}
                   </div>
 
                   {/* QR Code Section (toggled) */}
@@ -216,13 +180,6 @@ export const MyTickets = () => {
                         onClick={() => setExpandedQR(expandedQR === ticket.id ? null : ticket.id)}
                       >
                         <QrCodeIcon width={16} height={16} /> {expandedQR === ticket.id ? 'Hide QR' : 'View QR'}
-                      </button>
-                      <button
-                        className="btn btn-primary btn-sm"
-                        onClick={() => handleDownloadInvoice(ticket)}
-                        disabled={downloadingInvoiceId === ticket.id}
-                      >
-                        <DownloadIcon size={16} /> {downloadingInvoiceId === ticket.id ? 'Downloading...' : 'Download Invoice'}
                       </button>
                       <button
                         className="btn btn-danger btn-sm"

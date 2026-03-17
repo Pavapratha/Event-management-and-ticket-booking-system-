@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const protect = require('../config/auth');
-const { createBooking, confirmBooking, getUserBookings, getBookingById, cancelBooking, downloadBookingInvoice } = require('../controllers/bookingController');
+const { createBooking, confirmBooking, getUserBookings, getBookingById, cancelBooking } = require('../controllers/bookingController');
 const { getUserNotifications, markAsRead } = require('../controllers/notificationController');
 
 // Public event browsing
@@ -52,7 +52,6 @@ router.post('/bookings', protect, createBooking);
 router.get('/bookings', protect, getUserBookings);
 router.get('/user/bookings', protect, getUserBookings); // alias for frontend compatibility
 router.get('/bookings/:id', protect, getBookingById);
-router.get('/bookings/:id/invoice', protect, downloadBookingInvoice);
 router.patch('/bookings/:id/confirm', protect, confirmBooking);
 router.delete('/bookings/:id', protect, cancelBooking);
 

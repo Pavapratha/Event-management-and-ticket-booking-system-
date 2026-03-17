@@ -5,17 +5,6 @@ const { v4: uuidv4 } = require('uuid');
 const QRCode = require('qrcode');
 const { sendConfirmationEmail } = require('./emailController');
 const { createBookingConfirmationNotification } = require('./notificationController');
-const { buildInvoiceFilename, generateInvoicePdf } = require('../utils/invoiceGenerator');
-
-const ensureInvoiceMetadata = (booking) => {
-  if (!booking.invoiceNumber) {
-    booking.invoiceNumber = `INV-${booking.bookingId || String(booking._id).slice(-6).toUpperCase()}`;
-  }
-
-  if (!booking.invoiceGeneratedAt) {
-    booking.invoiceGeneratedAt = new Date();
-  }
-};
 
 // @desc    Get all bookings (admin)
 // @route   GET /api/admin/bookings
@@ -252,7 +241,6 @@ exports.confirmBooking = async (req, res) => {
     booking.status = 'confirmed';
     booking.qrCode = qrCode;
     booking.paymentDetails = paymentDetails;
-    ensureInvoiceMetadata(booking);
     await booking.save();
 
     const populatedBooking = await Booking.findById(booking._id)
@@ -279,58 +267,6 @@ exports.confirmBooking = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Server error' });
-  }
-};
-
-// @desc    Download booking invoice PDF
-// @route   GET /api/bookings/:id/invoice
-// @access  Protected (user)
-exports.downloadBookingInvoice = async (req, res) => {
-  try {
-    const booking = await Booking.findById(req.params.id)
-      .populate('userId', 'name email role')
-      .populate('eventId', 'title date time location venue price');
-
-    if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
-    }
-
-    if (booking.userId._id.toString() !== req.userId && req.userRole !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Unauthorized' });
-    }
-
-    if (booking.status !== 'confirmed') {
-      return res.status(400).json({
-        success: false,
-        message: 'Invoice is available only for confirmed bookings',
-      });
-    }
-
-    let requiresSave = false;
-    if (!booking.invoiceNumber || !booking.invoiceGeneratedAt) {
-      ensureInvoiceMetadata(booking);
-      requiresSave = true;
-    }
-
-    if (requiresSave) {
-      await booking.save();
-    }
-
-    const filename = buildInvoiceFilename(booking);
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-
-    res.on('error', (streamError) => {
-      console.error('Invoice response stream error:', streamError.message);
-    });
-
-    generateInvoicePdf(booking, res);
-  } catch (error) {
-    console.error('Invoice download failed:', error);
-    if (!res.headersSent) {
-      res.status(500).json({ success: false, message: 'Failed to generate invoice PDF' });
-    }
   }
 };
 

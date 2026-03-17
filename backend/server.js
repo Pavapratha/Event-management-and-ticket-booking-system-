@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const userRoutes = require('./routes/user');
 const { startEventReminderScheduler } = require('./jobs/eventReminderScheduler');
+const { startDatabaseBackupScheduler } = require('./jobs/databaseBackupScheduler');
 
 const app = express();
 
@@ -87,6 +88,7 @@ async function bootstrap() {
   require('./config/email');
 
   startEventReminderScheduler();
+  startDatabaseBackupScheduler();
   startServer(PORT);
 }
 
