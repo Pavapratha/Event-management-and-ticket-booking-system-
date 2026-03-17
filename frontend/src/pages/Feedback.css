@@ -1,0 +1,108 @@
+.feedback-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #ffffff 0%, #fff8f5 100%);
+  padding: 40px 20px;
+}
+
+.feedback-page-header {
+  text-align: center;
+  color: #333;
+  margin-bottom: 40px;
+  animation: fadeInDown 0.6s ease;
+}
+
+.feedback-page-header h1 {
+  font-size: 36px;
+  margin-bottom: 10px;
+  font-weight: 700;
+  color: #ff8c00;
+  text-shadow: 0 2px 4px rgba(255, 140, 0, 0.1);
+}
+
+.feedback-page-header p {
+  font-size: 16px;
+  opacity: 0.85;
+  margin: 0;
+  font-weight: 300;
+  color: #666;
+}
+
+.feedback-page-content {
+  max-width: 900px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 30px;
+}
+
+.feedback-form-section {
+  animation: fadeInUp 0.6s ease 0.2s both;
+}
+
+.feedback-history-section {
+  animation: fadeInUp 0.6s ease 0.4s both;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .feedback-page {
+    padding: 30px 15px;
+  }
+
+  .feedback-page-header h1 {
+    font-size: 28px;
+  }
+
+  .feedback-page-header p {
+    font-size: 14px;
+  }
+
+  .feedback-page-content {
+    gap: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .feedback-page {
+    padding: 20px 10px;
+  }
+
+  .feedback-page-header {
+    margin-bottom: 30px;
+  }
+
+  .feedback-page-header h1 {
+    font-size: 24px;
+    margin-bottom: 8px;
+  }
+
+  .feedback-page-header p {
+    font-size: 13px;
+  }
+
+  .feedback-page-content {
+    gap: 15px;
+  }
+}

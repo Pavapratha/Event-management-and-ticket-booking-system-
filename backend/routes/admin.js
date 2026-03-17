@@ -14,9 +14,6 @@ const {
   createCategory,
   updateCategory,
   deleteCategory,
-  getReviews,
-  toggleReviewVisibility,
-  deleteReview,
   getSettings,
   updateSettings,
 } = require('../controllers/adminController');
@@ -85,11 +82,6 @@ router.get('/categories', adminProtect, getCategories);
 router.post('/categories', adminProtect, createCategory);
 router.put('/categories/:id', adminProtect, updateCategory);
 router.delete('/categories/:id', adminProtect, deleteCategory);
-
-// Reviews
-router.get('/reviews', adminProtect, getReviews);
-router.put('/reviews/:id/toggle', adminProtect, toggleReviewVisibility);
-router.delete('/reviews/:id', adminProtect, deleteReview);
 
 // Settings
 router.get('/settings', adminProtect, getSettings);

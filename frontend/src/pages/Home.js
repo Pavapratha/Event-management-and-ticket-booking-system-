@@ -78,37 +78,20 @@ const features = [
   },
 ];
 
-const testimonials = [
-  {
-    id: 1,
-    name: 'Sarah Johnson',
-    role: 'Music Enthusiast',
-    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
-    content: 'Lycaon made finding and booking concert tickets so easy! The QR code feature is a game-changer.',
-    rating: 5,
-  },
-  {
-    id: 2,
-    name: 'Michael Chen',
-    role: 'Event Organizer',
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
-    content: 'As an event organizer, Lycaon has streamlined our ticket sales and attendee management.',
-    rating: 5,
-  },
-  {
-    id: 3,
-    name: 'Emily Rodriguez',
-    role: 'Festival Goer',
-    image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop',
-    content: "I've discovered so many amazing events through Lycaon. It's become my go-to for entertainment.",
-    rating: 5,
-  },
-];
+const getInitials = (name = 'Guest User') =>
+  name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0].toUpperCase())
+    .join('');
 
 export const Home = () => {
   const navigate = useNavigate();
   const [featuredEvents, setFeaturedEvents] = useState([]);
   const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [feedbackEntries, setFeedbackEntries] = useState([]);
+  const [feedbackStats, setFeedbackStats] = useState({ averageRating: '0.00', totalFeedback: 0 });
   const [homeStats, setHomeStats] = useState([]);
   const [categories, setCategories] = useState(categoryDefs.map(c => ({ ...c, count: 0 })));
   const [loading, setLoading] = useState(true);
@@ -124,6 +107,12 @@ export const Home = () => {
         const upcoming = sorted.slice(4, 8).map((e) => transformEvent(e, false));
         setFeaturedEvents(featured);
         setUpcomingEvents(upcoming);
+
+        const feedbackRes = await api.get('/api/feedback/public?limit=6').catch(() => ({
+          data: { feedback: [], stats: { averageRating: '0.00', totalFeedback: 0 } },
+        }));
+        setFeedbackEntries(feedbackRes.data.feedback || []);
+        setFeedbackStats(feedbackRes.data.stats || { averageRating: '0.00', totalFeedback: 0 });
 
         // Fetch stats
         try {
@@ -317,56 +306,51 @@ export const Home = () => {
         <div className="container">
           <div className="section-header section-header-center">
             <h2 className="section-title">What Our Users Say</h2>
-            <p className="section-subtitle">Join thousands of satisfied event-goers</p>
+            <p className="section-subtitle">
+              Real feedback from verified users of the platform
+              {feedbackStats.totalFeedback > 0
+                ? ` · ${feedbackStats.totalFeedback} reviewed feedback entries · ${feedbackStats.averageRating}/5 average`
+                : ''}
+            </p>
           </div>
-          
-          <div className="testimonials-grid">
-            {testimonials.map((testimonial) => (
-              <div key={testimonial.id} className="testimonial-card">
-                <div className="testimonial-rating">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <StarIcon key={i} size={16} filled />
-                  ))}
-                </div>
-                <p className="testimonial-content">"{testimonial.content}"</p>
-                <div className="testimonial-author">
-                  <img 
-                    src={testimonial.image} 
-                    alt={testimonial.name} 
-                    className="testimonial-avatar"
-                  />
-                  <div>
-                    <p className="testimonial-name">{testimonial.name}</p>
-                    <p className="testimonial-role">{testimonial.role}</p>
+
+          {feedbackEntries.length > 0 ? (
+            <div className="testimonials-grid">
+              {feedbackEntries.map((feedback) => (
+                <div key={feedback._id} className="testimonial-card">
+                  <div className="testimonial-rating-row">
+                    <div className="testimonial-rating">
+                      {[...Array(feedback.rating)].map((_, i) => (
+                        <StarIcon key={i} size={16} filled />
+                      ))}
+                    </div>
+                    <span className="testimonial-date">
+                      {new Date(feedback.createdAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </span>
+                  </div>
+                  {feedback.title && <h3 className="testimonial-title">{feedback.title}</h3>}
+                  <p className="testimonial-content">"{feedback.message}"</p>
+                  <div className="testimonial-author">
+                    <div className="testimonial-avatar testimonial-avatar-fallback">
+                      {getInitials(feedback.userName)}
+                    </div>
+                    <div>
+                      <p className="testimonial-name">{feedback.userName}</p>
+                      <p className="testimonial-role">Verified attendee feedback</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="section cta-section">
-        <div className="container">
-          <div className="cta-card">
-            <div className="cta-bg"></div>
-            <div className="cta-content">
-              <h2 className="cta-title">Ready to Experience Something Amazing?</h2>
-              <p className="cta-subtitle">
-                Join millions of users discovering and booking events with Lycaon
-              </p>
-              <div className="cta-buttons">
-                <Link to="/events" className="btn btn-primary btn-xl">
-                  Explore Events
-                  <ArrowRightIcon size={20} />
-                </Link>
-                <Link to="/register" className="btn btn-outline btn-xl">
-                  Create Account
-                </Link>
-              </div>
+              ))}
             </div>
-          </div>
+          ) : (
+            <div className="testimonials-empty">
+              <p>No user feedback has been reviewed yet.</p>
+            </div>
+          )}
         </div>
       </section>
 

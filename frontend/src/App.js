@@ -13,6 +13,7 @@ import { EventDetails } from './pages/EventDetails';
 import { Home } from './pages/Home';
 import { MyTickets } from './pages/MyTickets';
 import { Notifications } from './pages/Notifications';
+import Feedback from './pages/Feedback';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
@@ -135,6 +136,16 @@ const AppRoutes = () => {
           <ProtectedRoute>
             <ProtectedLayout>
               <Notifications />
+            </ProtectedLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/feedback"
+        element={
+          <ProtectedRoute>
+            <ProtectedLayout>
+              <Feedback />
             </ProtectedLayout>
           </ProtectedRoute>
         }

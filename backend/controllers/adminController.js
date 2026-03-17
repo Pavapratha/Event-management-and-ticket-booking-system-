@@ -1,7 +1,6 @@
 const User = require('../models/User');
 const Booking = require('../models/Booking');
 const Category = require('../models/Category');
-const Review = require('../models/Review');
 const Settings = require('../models/Settings');
 const jwt = require('jsonwebtoken');
 
@@ -224,42 +223,6 @@ exports.deleteCategory = async (req, res) => {
     if (!category)
       return res.status(404).json({ success: false, message: 'Category not found' });
     res.json({ success: true, message: 'Category deleted' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-};
-
-// ─── REVIEWS ───────────────────────────────────────────────────────────────────
-
-exports.getReviews = async (req, res) => {
-  try {
-    const reviews = await Review.find()
-      .populate('userId', 'name email')
-      .populate('eventId', 'title')
-      .sort({ createdAt: -1 });
-    res.json({ success: true, reviews });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-};
-
-exports.toggleReviewVisibility = async (req, res) => {
-  try {
-    const review = await Review.findById(req.params.id);
-    if (!review)
-      return res.status(404).json({ success: false, message: 'Review not found' });
-    review.isHidden = !review.isHidden;
-    await review.save();
-    res.json({ success: true, review });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-};
-
-exports.deleteReview = async (req, res) => {
-  try {
-    await Review.findByIdAndDelete(req.params.id);
-    res.json({ success: true, message: 'Review deleted' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });
   }

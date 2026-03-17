@@ -92,6 +92,14 @@ const bookingSchema = new mongoose.Schema(
       status: String,
       cardLast4: String,
     },
+    invoiceNumber: {
+      type: String,
+      default: '',
+    },
+    invoiceGeneratedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MailIcon, TwitterIcon, InstagramIcon, FacebookIcon, LinkedInIcon, MapPinIcon, ArrowRightIcon } from './Icons';
+import { TwitterIcon, InstagramIcon, FacebookIcon, LinkedInIcon, MapPinIcon } from './Icons';
 import './Footer.css';
 
 export const Footer = () => {
@@ -48,32 +48,6 @@ export const Footer = () => {
 
   return (
     <footer className="footer">
-      {/* Newsletter Section */}
-      <div className="footer-newsletter">
-        <div className="container">
-          <div className="newsletter-content">
-            <div className="newsletter-text">
-              <h3>Stay in the loop</h3>
-              <p>Get the latest events and exclusive offers delivered to your inbox</p>
-            </div>
-            <form className="newsletter-form" onSubmit={(e) => e.preventDefault()}>
-              <div className="newsletter-input-wrapper">
-                <MailIcon size={20} className="newsletter-icon" />
-                <input 
-                  type="email" 
-                  placeholder="Enter your email" 
-                  className="newsletter-input"
-                />
-              </div>
-              <button type="submit" className="btn btn-primary">
-                Subscribe
-                <ArrowRightIcon size={18} />
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-
       {/* Main Footer */}
       <div className="footer-main">
         <div className="container">

@@ -49,6 +49,7 @@ export const Navbar = () => {
     { path: '/events', label: 'Events', icon: CalendarIcon },
     { path: '/my-tickets', label: 'My Tickets', icon: TicketIcon },
     ...(user ? [{ path: '/notifications', label: 'Notifications', icon: MailIcon }] : []),
+    ...(user ? [{ path: '/feedback', label: 'Feedback', icon: MailIcon }] : []),
   ];
 
   return (

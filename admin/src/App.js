@@ -16,7 +16,7 @@ import Reports from './pages/Reports';
 import Notifications from './pages/Notifications';
 import Users from './pages/Users';
 import Categories from './pages/Categories';
-import Reviews from './pages/Reviews';
+import AdminFeedback from './pages/AdminFeedback';
 import Settings from './pages/Settings';
 import './styles/index.css';
 
@@ -54,7 +54,7 @@ function App() {
             <Route path="reports" element={<Reports />} />
             <Route path="users" element={<Users />} />
             <Route path="categories" element={<Categories />} />
-            <Route path="reviews" element={<Reviews />} />
+            <Route path="feedback" element={<AdminFeedback />} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="settings" element={<Settings />} />
           </Route>

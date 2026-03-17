@@ -6,8 +6,8 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const userRoutes = require('./routes/user');
+const feedbackRoutes = require('./routes/feedback');
 const { startEventReminderScheduler } = require('./jobs/eventReminderScheduler');
-const { startDatabaseBackupScheduler } = require('./jobs/databaseBackupScheduler');
 
 const app = express();
 
@@ -31,6 +31,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/feedback', feedbackRoutes);
 app.use('/api', userRoutes);
 
 // Health check
@@ -88,7 +89,6 @@ async function bootstrap() {
   require('./config/email');
 
   startEventReminderScheduler();
-  startDatabaseBackupScheduler();
   startServer(PORT);
 }
 
