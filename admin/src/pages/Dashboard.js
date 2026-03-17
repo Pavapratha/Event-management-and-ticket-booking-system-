@@ -5,6 +5,7 @@ import {
   PieChart, Pie, Cell, Legend,
 } from 'recharts';
 import api from '../services/api';
+import { formatLkr, formatLkrCompact } from '../utils/currency';
 import './Dashboard.css';
 
 const COLORS = ['#FF7A00', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
@@ -80,9 +81,6 @@ function Dashboard() {
       ).slice(-7)
     : [];
 
-  const formatCurrency = (val) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
-
   const getStatusBadge = (status) => {
     const map = { confirmed: 'badge-success', pending: 'badge-warning', cancelled: 'badge-danger' };
     return map[status] || 'badge-gray';
@@ -118,7 +116,7 @@ function Dashboard() {
         <StatCard icon="🎟️" label="Total Bookings" value={stats?.totalBookings || 0} color="#10b981" bg="#d1fae5" />
         <StatCard icon="📦" label="Tickets Sold" value={stats?.ticketsSold || 0} color="#f59e0b" bg="#fef3c7" />
         <StatCard icon="❌" label="Cancelled" value={stats?.cancelledBookings || 0} color="#ef4444" bg="#fee2e2" />
-        <StatCard icon="💰" label="Total Revenue" value={formatCurrency(stats?.totalRevenue || 0)} color="#8b5cf6" bg="#ede9fe" />
+        <StatCard icon="💰" label="Total Revenue" value={formatLkr(stats?.totalRevenue || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} color="#8b5cf6" bg="#ede9fe" />
       </div>
 
       {/* Charts row */}
@@ -133,8 +131,8 @@ function Dashboard() {
                 <BarChart data={revenueChartData} margin={{ top: 5, left: 5, right: 5, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v) => formatCurrency(v)} />
+                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatLkrCompact(v)} />
+                  <Tooltip formatter={(v) => formatLkr(v)} />
                   <Bar dataKey="revenue" fill="#FF7A00" radius={[4, 4, 0, 0]} name="Revenue" />
                 </BarChart>
               </ResponsiveContainer>
@@ -207,7 +205,7 @@ function Dashboard() {
                         </div>
                       </td>
                       <td>{b.eventId?.title || 'N/A'}</td>
-                      <td>{formatCurrency(b.totalAmount || 0)}</td>
+                      <td>{formatLkr(b.totalAmount || 0)}</td>
                       <td>
                         <span className={`badge ${getStatusBadge(b.status)}`}>
                           {b.status}

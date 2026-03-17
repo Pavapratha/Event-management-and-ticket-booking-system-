@@ -16,6 +16,7 @@ const {
   deleteCategory,
   getSettings,
   updateSettings,
+  exportBackup,
 } = require('../controllers/adminController');
 const {
   getAllEvents,
@@ -86,6 +87,7 @@ router.delete('/categories/:id', adminProtect, deleteCategory);
 // Settings
 router.get('/settings', adminProtect, getSettings);
 router.put('/settings', adminProtect, updateSettings);
+router.get('/backup', adminProtect, exportBackup);
 
 module.exports = router;
 

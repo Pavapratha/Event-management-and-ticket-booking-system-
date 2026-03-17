@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { formatLkr } from '../utils/currency';
 
 function Bookings() {
   const [bookings, setBookings] = useState([]);
@@ -57,9 +58,6 @@ function Bookings() {
     const matchStatus = statusFilter === 'all' || b.status === statusFilter;
     return matchSearch && matchStatus;
   });
-
-  const formatCurrency = (val) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
 
   if (loading) return <div className="loading-screen"><div className="spinner"></div></div>;
 
@@ -137,7 +135,7 @@ function Bookings() {
                       </div>
                     </td>
                     <td style={{ textAlign: 'center' }}>{booking.ticketQuantity}</td>
-                    <td style={{ fontWeight: 600 }}>{formatCurrency(booking.totalAmount)}</td>
+                    <td style={{ fontWeight: 600 }}>{formatLkr(booking.totalAmount)}</td>
                     <td>{new Date(booking.createdAt).toLocaleDateString()}</td>
                     <td>
                       <select

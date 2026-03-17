@@ -4,6 +4,7 @@ import QRCode from 'react-qr-code';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import api from '../services/api';
+import { formatLkr } from '../utils/currency';
 import './BookingDetails.css';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -97,8 +98,8 @@ function BookingDetails() {
         ['Event Time', booking.eventId?.time || 'N/A'],
         ['Location', booking.eventId?.location || 'N/A'],
         ['Ticket Quantity', booking.ticketQuantity?.toString()],
-        ['Unit Price', `$${booking.eventId?.price || 0}`],
-        ['Total Amount', `$${booking.totalAmount}`],
+        ['Unit Price', formatLkr(booking.eventId?.price || 0)],
+        ['Total Amount', formatLkr(booking.totalAmount)],
         ['Status', booking.status?.toUpperCase()],
       ],
       headStyles: { fillColor: [255, 107, 0], textColor: 255 },
@@ -115,9 +116,6 @@ function BookingDetails() {
 
     doc.save(`invoice-${booking.bookingId}.pdf`);
   };
-
-  const formatCurrency = (val) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
 
   const getStatusBadge = (status) => {
     const map = { confirmed: 'badge-success', pending: 'badge-warning', cancelled: 'badge-danger' };
@@ -180,7 +178,7 @@ function BookingDetails() {
               <div className="info-item">
                 <span className="info-label">Total Amount</span>
                 <span className="info-value" style={{ color: 'var(--primary)', fontWeight: 700, fontSize: 18 }}>
-                  {formatCurrency(booking.totalAmount)}
+                  {formatLkr(booking.totalAmount)}
                 </span>
               </div>
             </div>
@@ -238,7 +236,7 @@ function BookingDetails() {
               </div>
               <div className="info-item">
                 <span className="info-label">Price/Ticket</span>
-                <span className="info-value">{formatCurrency(booking.eventId?.price || 0)}</span>
+                <span className="info-value">{formatLkr(booking.eventId?.price || 0)}</span>
               </div>
             </div>
           </div>

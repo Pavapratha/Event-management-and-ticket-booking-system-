@@ -1,8 +1,10 @@
 const User = require('../models/User');
+const Event = require('../models/Event');
 const Booking = require('../models/Booking');
 const Category = require('../models/Category');
 const Settings = require('../models/Settings');
 const jwt = require('jsonwebtoken');
+const XLSX = require('xlsx');
 
 const DEFAULT_CATEGORIES = [
   { name: 'Music', icon: '🎵', color: '#8b5cf6' },
@@ -23,8 +25,102 @@ const DEFAULT_SETTINGS = {
   maintenanceMode: false,
   allowRegistrations: true,
   maxTicketsPerBooking: 10,
-  currency: 'USD',
+  currency: 'LKR',
   timezone: 'UTC',
+};
+
+const buildPaymentBackupRecords = (bookings) =>
+  bookings.map((booking) => ({
+    bookingId: booking.bookingId,
+    bookingMongoId: booking._id,
+    userId: booking.userId,
+    eventId: booking.eventId,
+    amount: booking.totalAmount,
+    subtotalAmount: booking.subtotalAmount,
+    bookingFee: booking.bookingFee,
+    currency: 'LKR',
+    status: booking.status,
+    paymentDetails: booking.paymentDetails || null,
+    invoiceNumber: booking.invoiceNumber || null,
+    invoiceGeneratedAt: booking.invoiceGeneratedAt || null,
+    createdAt: booking.createdAt,
+    updatedAt: booking.updatedAt,
+  }));
+
+const serializeSheetValue = (value) => {
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (Array.isArray(value) || (value && typeof value === 'object')) {
+    return JSON.stringify(value);
+  }
+
+  return value ?? '';
+};
+
+const mapRowsForSheet = (rows) =>
+  rows.map((row) =>
+    Object.entries(row).reduce((accumulator, [key, value]) => {
+      accumulator[key] = serializeSheetValue(value);
+      return accumulator;
+    }, {})
+  );
+
+const buildBackupPayload = ({ users, events, bookings, settingsDocs, categories, exportedBy, format }) => {
+  const settings = settingsDocs.reduce((accumulator, entry) => {
+    accumulator[entry.key] = entry.value;
+    return accumulator;
+  }, {});
+
+  return {
+    metadata: {
+      exportedAt: new Date().toISOString(),
+      exportedBy: {
+        id: exportedBy._id,
+        name: exportedBy.name,
+        email: exportedBy.email,
+      },
+      format,
+      currency: 'LKR',
+      counts: {
+        users: users.length,
+        events: events.length,
+        bookings: bookings.length,
+        payments: bookings.length,
+        settings: Object.keys(settings).length,
+        categories: categories.length,
+      },
+    },
+    users,
+    events,
+    bookings,
+    payments: buildPaymentBackupRecords(bookings),
+    settings,
+    categories,
+  };
+};
+
+const buildBackupWorkbook = (backupPayload) => {
+  const workbook = XLSX.utils.book_new();
+  const metadataRows = Object.entries(backupPayload.metadata).map(([key, value]) => ({
+    key,
+    value: serializeSheetValue(value),
+  }));
+  const settingsRows = Object.entries(backupPayload.settings).map(([key, value]) => ({
+    key,
+    value: serializeSheetValue(value),
+  }));
+
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(metadataRows), 'Metadata');
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(mapRowsForSheet(backupPayload.users)), 'Users');
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(mapRowsForSheet(backupPayload.events)), 'Events');
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(mapRowsForSheet(backupPayload.bookings)), 'Bookings');
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(mapRowsForSheet(backupPayload.payments)), 'Payments');
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(settingsRows), 'Settings');
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(mapRowsForSheet(backupPayload.categories)), 'Categories');
+
+  return workbook;
 };
 
 const generateToken = (id) => {
@@ -255,5 +351,54 @@ exports.updateSettings = async (req, res) => {
     res.json({ success: true, message: 'Settings updated successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+exports.exportBackup = async (req, res) => {
+  try {
+    const requestedFormat = typeof req.query.format === 'string' ? req.query.format.toLowerCase() : 'json';
+    const format = requestedFormat === 'xlsx' ? 'xlsx' : 'json';
+    const [users, events, bookings, settingsDocs, categories] = await Promise.all([
+      User.find().select('-password -verificationToken -verificationTokenExpiry').lean(),
+      Event.find().lean(),
+      Booking.find().lean(),
+      Settings.find().lean(),
+      Category.find().lean(),
+    ]);
+
+    const backupPayload = buildBackupPayload({
+      users,
+      events,
+      bookings,
+      settingsDocs,
+      categories,
+      exportedBy: req.user,
+      format,
+    });
+    const baseFilename = `site-backup-${new Date().toISOString().slice(0, 10)}`;
+
+    if (format === 'xlsx') {
+      const workbook = buildBackupWorkbook(backupPayload);
+      const workbookBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' });
+
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      );
+      res.setHeader('Content-Disposition', `attachment; filename="${baseFilename}.xlsx"`);
+
+      return res.status(200).send(workbookBuffer);
+    }
+
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${baseFilename}.json"`);
+
+    return res.status(200).send(JSON.stringify(backupPayload, null, 2));
+  } catch (error) {
+    console.error('Backup export failed:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to create backup export',
+    });
   }
 };

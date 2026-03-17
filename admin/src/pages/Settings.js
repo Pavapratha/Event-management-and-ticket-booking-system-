@@ -41,12 +41,14 @@ function Settings() {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [backupLoading, setBackupLoading] = useState('');
   const [saved, setSaved] = useState(false);
+  const [backupMessage, setBackupMessage] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
     api.get('/api/admin/settings')
-      .then((res) => setSettings(res.data.settings))
+      .then((res) => setSettings({ ...res.data.settings, currency: 'LKR' }))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -57,13 +59,65 @@ function Settings() {
     setSaving(true);
     setError('');
     try {
-      await api.put('/api/admin/settings', settings);
+      await api.put('/api/admin/settings', { ...settings, currency: 'LKR' });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to save settings');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const extractErrorMessage = async (err) => {
+    const responseData = err.response?.data;
+
+    if (responseData instanceof Blob) {
+      try {
+        const text = await responseData.text();
+        const parsed = JSON.parse(text);
+        return parsed.message || 'Failed to create backup';
+      } catch (parseError) {
+        return 'Failed to create backup';
+      }
+    }
+
+    return err.response?.data?.message || 'Failed to create backup';
+  };
+
+  const handleCreateBackup = async (format) => {
+    setBackupLoading(format);
+    setError('');
+    setBackupMessage('');
+
+    try {
+      const response = await api.get(`/api/admin/backup?format=${format}`, {
+        responseType: 'blob',
+      });
+
+      const contentDisposition = response.headers['content-disposition'] || '';
+      const match = contentDisposition.match(/filename="?([^"]+)"?/i);
+      const fallbackExtension = format === 'xlsx' ? 'xlsx' : 'json';
+      const filename = match?.[1] || `site-backup-${new Date().toISOString().slice(0, 10)}.${fallbackExtension}`;
+      const contentType = response.headers['content-type'] || (format === 'xlsx'
+        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        : 'application/json');
+      const blob = new Blob([response.data], { type: contentType });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      setBackupMessage(`${format.toUpperCase()} backup created successfully and download started.`);
+    } catch (err) {
+      setError(await extractErrorMessage(err));
+    } finally {
+      setBackupLoading('');
     }
   };
 
@@ -84,6 +138,7 @@ function Settings() {
 
       {error && <div className="alert alert-error">{error}</div>}
       {saved && <div className="alert alert-success">✅ Settings saved successfully!</div>}
+      {backupMessage && <div className="alert alert-success">✅ {backupMessage}</div>}
 
       {/* General Settings */}
       <Section title="General Settings" icon="🌐">
@@ -130,16 +185,32 @@ function Settings() {
             <label className="form-label">Currency</label>
             <select
               className="form-control"
-              value={settings.currency || 'USD'}
+              value={settings.currency || 'LKR'}
               onChange={(e) => update('currency', e.target.value)}
             >
-              <option value="USD">USD — US Dollar</option>
-              <option value="EUR">EUR — Euro</option>
-              <option value="GBP">GBP — British Pound</option>
-              <option value="CAD">CAD — Canadian Dollar</option>
-              <option value="AUD">AUD — Australian Dollar</option>
-              <option value="PHP">PHP — Philippine Peso</option>
+              <option value="LKR">LKR — Sri Lankan Rupee</option>
             </select>
+          </div>
+        </div>
+      </Section>
+
+      <Section title="Backup & Export" icon="🗄️">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+          <div>
+            <p style={{ fontSize: 14, color: 'var(--gray-700)', marginBottom: 8 }}>
+              Create a downloadable backup containing users, events, bookings, payments, settings, and categories.
+            </p>
+            <p style={{ fontSize: 12, color: 'var(--gray-500)' }}>
+              Choose JSON or Excel. This action is restricted to authenticated admin accounts and does not modify any live data.
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <button className="btn btn-outline btn-lg" onClick={() => handleCreateBackup('json')} disabled={Boolean(backupLoading)}>
+              {backupLoading === 'json' ? 'Creating JSON...' : 'Download JSON Backup'}
+            </button>
+            <button className="btn btn-secondary btn-lg" onClick={() => handleCreateBackup('xlsx')} disabled={Boolean(backupLoading)}>
+              {backupLoading === 'xlsx' ? 'Creating Excel...' : 'Download Excel Backup'}
+            </button>
           </div>
         </div>
       </Section>

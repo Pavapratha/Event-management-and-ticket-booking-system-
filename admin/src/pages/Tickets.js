@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { formatLkr } from '../utils/currency';
 
 function Tickets() {
   const [bookings, setBookings] = useState([]);
@@ -58,9 +59,6 @@ function Tickets() {
   const pendingTickets = bookings
     .filter((b) => b.status === 'pending')
     .reduce((s, b) => s + (b.ticketQuantity || 0), 0);
-
-  const fmt = (v) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(v);
 
   const badgeClass = (s) =>
     ({ confirmed: 'badge-success', pending: 'badge-warning', cancelled: 'badge-danger' }[s] || 'badge-gray');
@@ -194,10 +192,10 @@ function Tickets() {
                     </td>
                     <td style={{ textAlign: 'center', fontWeight: 600 }}>{booking.ticketQuantity}</td>
                     <td style={{ fontSize: 13 }}>
-                      {booking.eventId?.price != null ? fmt(booking.eventId.price) : '—'}
+                      {booking.eventId?.price != null ? formatLkr(booking.eventId.price) : '—'}
                     </td>
                     <td style={{ fontWeight: 600, color: 'var(--gray-900)' }}>
-                      {fmt(booking.totalAmount || 0)}
+                      {formatLkr(booking.totalAmount || 0)}
                     </td>
                     <td>
                       <span className={`badge ${badgeClass(booking.status)}`}>{booking.status}</span>

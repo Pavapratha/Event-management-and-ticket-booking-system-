@@ -3,6 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
 import api from '../services/api';
+import { formatLkr, formatLkrCompact } from '../utils/currency';
 
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -57,11 +58,6 @@ function Payments() {
   });
   const chartData = Object.values(monthlyMap).slice(-6);
 
-  const fmt = (v) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v);
-  const fmtFull = (v) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(v);
-
   const badgeClass = (s) =>
     ({ confirmed: 'badge-success', pending: 'badge-warning', cancelled: 'badge-danger' }[s] || 'badge-gray');
 
@@ -82,7 +78,7 @@ function Payments() {
         <div className="stat-card" style={{ borderLeftColor: '#ff6b00' }}>
           <div className="stat-icon" style={{ background: '#fff3e8', fontSize: 22 }}>💰</div>
           <div className="stat-info">
-            <div className="stat-value" style={{ fontSize: 20 }}>{fmt(stats.totalRevenue || 0)}</div>
+            <div className="stat-value" style={{ fontSize: 20 }}>{formatLkr(stats.totalRevenue || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
             <div className="stat-label">Total Revenue</div>
           </div>
         </div>
@@ -90,14 +86,14 @@ function Payments() {
           <div className="stat-icon" style={{ background: '#d1fae5', fontSize: 22 }}>✅</div>
           <div className="stat-info">
             <div className="stat-value">{stats.completedCount || 0}</div>
-            <div className="stat-label">Completed ({fmt(stats.completedRevenue || 0)})</div>
+            <div className="stat-label">Completed ({formatLkr(stats.completedRevenue || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 })})</div>
           </div>
         </div>
         <div className="stat-card" style={{ borderLeftColor: '#f59e0b' }}>
           <div className="stat-icon" style={{ background: '#fef3c7', fontSize: 22 }}>⏳</div>
           <div className="stat-info">
             <div className="stat-value">{stats.pendingCount || 0}</div>
-            <div className="stat-label">Pending ({fmt(stats.pendingRevenue || 0)})</div>
+            <div className="stat-label">Pending ({formatLkr(stats.pendingRevenue || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 })})</div>
           </div>
         </div>
         <div className="stat-card" style={{ borderLeftColor: '#ef4444' }}>
@@ -120,8 +116,8 @@ function Payments() {
               <BarChart data={chartData} margin={{ top: 5, left: 5, right: 5, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `$${v}`} />
-                <Tooltip formatter={(v) => fmt(v)} />
+                <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => formatLkrCompact(v)} />
+                <Tooltip formatter={(v) => formatLkr(v)} />
                 <Bar dataKey="revenue" radius={[4, 4, 0, 0]} name="Revenue">
                   {chartData.map((_, i) => (
                     <Cell key={i} fill={i === chartData.length - 1 ? '#ff6b00' : '#ffb380'} />
@@ -199,7 +195,7 @@ function Payments() {
                     </td>
                     <td style={{ textAlign: 'center', fontWeight: 600 }}>{p.ticketQuantity}</td>
                     <td style={{ fontWeight: 700, color: 'var(--gray-900)' }}>
-                      {fmtFull(p.totalAmount || 0)}
+                      {formatLkr(p.totalAmount || 0)}
                     </td>
                     <td>
                       <span className="badge badge-info">Online</span>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+import { formatLkr } from '../utils/currency';
 
 function UserBookingsModal({ user, onClose }) {
   const [bookings, setBookings] = useState([]);
@@ -11,9 +12,6 @@ function UserBookingsModal({ user, onClose }) {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [user._id]);
-
-  const fmt = (v) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(v);
 
   const badgeClass = (s) =>
     ({ confirmed: 'badge-success', pending: 'badge-warning', cancelled: 'badge-danger' }[s] || 'badge-gray');
@@ -61,7 +59,7 @@ function UserBookingsModal({ user, onClose }) {
                         </div>
                       </td>
                       <td style={{ textAlign: 'center' }}>{b.ticketQuantity}</td>
-                      <td style={{ fontWeight: 600 }}>{fmt(b.totalAmount)}</td>
+                      <td style={{ fontWeight: 600 }}>{formatLkr(b.totalAmount)}</td>
                       <td style={{ fontSize: 12 }}>{new Date(b.createdAt).toLocaleDateString()}</td>
                       <td><span className={`badge ${badgeClass(b.status)}`}>{b.status}</span></td>
                     </tr>

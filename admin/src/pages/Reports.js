@@ -5,8 +5,8 @@ import {
   LineChart, Line,
 } from 'recharts';
 import api from '../services/api';
+import { formatLkr, formatLkrCompact } from '../utils/currency';
 
-const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const COLORS = ['#ff6b00','#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6'];
 
 function Reports() {
@@ -34,31 +34,30 @@ function Reports() {
 
   if (loading) return <div className="loading-screen"><div className="spinner"></div></div>;
 
-  const monthlyData = (data?.monthlyRevenue || []).map((m) => ({
-    month: MONTH_NAMES[m._id.month - 1] + ' ' + m._id.year,
-    revenue: m.revenue,
-    bookings: m.bookings,
+  const summary = data?.summary || {};
+  const visibility = data?.visibility || {};
+  const monthlyData = data?.monthlyPerformance || [];
+  const statusData = data?.statusDistribution || [];
+  const categoryData = data?.categoryRevenue || [];
+  const eventData = (data?.eventPerformance || []).map((event) => ({
+    ...event,
+    name: event.eventTitle?.length > 20 ? `${event.eventTitle.slice(0, 18)}...` : event.eventTitle,
+    tickets: event.totalTickets,
+    revenue: event.totalRevenue,
   }));
-
-  const statusData = (data?.statusBreakdown || []).map((s) => ({
-    name: s._id.charAt(0).toUpperCase() + s._id.slice(1),
-    value: s.count,
-  }));
-
-  const categoryData = (data?.categoryBreakdown || []).map((c) => ({
-    name: c._id || 'Other',
-    bookings: c.count,
-    revenue: c.revenue,
-  }));
-
-  const eventData = (data?.bookingsPerEvent || []).slice(0, 8).map((e) => ({
-    name: e.eventTitle?.length > 20 ? e.eventTitle.slice(0, 18) + '...' : e.eventTitle,
-    tickets: e.totalTickets,
-    revenue: e.totalRevenue,
-  }));
-
-  const formatCurrency = (val) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
+  const eventRevenueRows = data?.eventRevenueTable || [];
+  const showMonthlyPerformance = Boolean(visibility.monthlyPerformance) && monthlyData.some((item) => item.revenue > 0 || item.bookings > 0);
+  const showStatusDistribution = Boolean(visibility.statusDistribution) && statusData.length > 0;
+  const showCategoryRevenue = Boolean(visibility.categoryRevenue) && categoryData.length > 0;
+  const showEventPerformance = Boolean(visibility.eventPerformance) && eventData.length > 0;
+  const showEventRevenueTable = Boolean(visibility.eventRevenueTable) && eventRevenueRows.length > 0;
+  const hasRenderableSections = [
+    showMonthlyPerformance,
+    showStatusDistribution,
+    showCategoryRevenue,
+    showEventPerformance,
+    showEventRevenueTable,
+  ].some(Boolean);
 
   return (
     <div>
@@ -69,43 +68,67 @@ function Reports() {
         </div>
       </div>
 
-      {/* Monthly Revenue Chart */}
-      <div className="card" style={{ marginBottom: 20 }}>
-        <div className="card-header">
-          <span className="card-title">📈 Monthly Revenue & Bookings (Last 6 Months)</span>
+      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: 20 }}>
+        <div className="stat-card" style={{ borderLeftColor: '#8b5cf6' }}>
+          <div className="stat-icon" style={{ background: '#ede9fe', fontSize: 22 }}>💰</div>
+          <div className="stat-info">
+            <div className="stat-value">{formatLkr(summary.totalRevenue || 0, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+            <div className="stat-label">Total Revenue</div>
+          </div>
         </div>
-        <div className="card-body">
-          {monthlyData.length > 0 ? (
+        <div className="stat-card" style={{ borderLeftColor: '#10b981' }}>
+          <div className="stat-icon" style={{ background: '#d1fae5', fontSize: 22 }}>🎟️</div>
+          <div className="stat-info">
+            <div className="stat-value">{summary.totalBookings || 0}</div>
+            <div className="stat-label">Total Bookings</div>
+          </div>
+        </div>
+        <div className="stat-card" style={{ borderLeftColor: '#3b82f6' }}>
+          <div className="stat-icon" style={{ background: '#dbeafe', fontSize: 22 }}>✅</div>
+          <div className="stat-info">
+            <div className="stat-value">{summary.completedBookings || 0}</div>
+            <div className="stat-label">Completed Bookings</div>
+          </div>
+        </div>
+        <div className="stat-card" style={{ borderLeftColor: '#f59e0b' }}>
+          <div className="stat-icon" style={{ background: '#fef3c7', fontSize: 22 }}>🏷️</div>
+          <div className="stat-info">
+            <div className="stat-value">{summary.topCategory || '—'}</div>
+            <div className="stat-label">Top Revenue Category</div>
+          </div>
+        </div>
+      </div>
+
+      {showMonthlyPerformance ? (
+        <div className="card" style={{ marginBottom: 20 }}>
+          <div className="card-header">
+            <span className="card-title">📈 Monthly Revenue & Bookings (Last 6 Months)</span>
+          </div>
+          <div className="card-body">
             <ResponsiveContainer width="100%" height={280}>
               <LineChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                <YAxis yAxisId="left" tick={{ fontSize: 12 }} tickFormatter={(v) => `$${v}`} />
+                <YAxis yAxisId="left" tick={{ fontSize: 12 }} tickFormatter={(v) => formatLkrCompact(v)} />
                 <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
-                <Tooltip formatter={(v, name) => name === 'Revenue' ? formatCurrency(v) : v} />
+                <Tooltip formatter={(v, name) => name === 'Revenue' ? formatLkr(v) : v} />
                 <Legend />
                 <Line yAxisId="left" type="monotone" dataKey="revenue" stroke="#ff6b00" strokeWidth={2} name="Revenue" dot={{ r: 4 }} />
                 <Line yAxisId="right" type="monotone" dataKey="bookings" stroke="#3b82f6" strokeWidth={2} name="Bookings" dot={{ r: 4 }} />
               </LineChart>
             </ResponsiveContainer>
-          ) : (
-            <div className="empty-state">
-              <div className="empty-state-icon">📈</div>
-              <div className="empty-state-text">No revenue data yet</div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Charts Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
-        {/* Booking Status */}
-        <div className="card">
-          <div className="card-header">
-            <span className="card-title">🥧 Booking Status Distribution</span>
           </div>
-          <div className="card-body">
-            {statusData.length > 0 ? (
+        </div>
+      ) : null}
+
+      {showStatusDistribution || showCategoryRevenue ? (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+          {showStatusDistribution ? (
+            <div className="card">
+              <div className="card-header">
+                <span className="card-title">🥧 Booking Status Distribution</span>
+              </div>
+              <div className="card-body">
               <ResponsiveContainer width="100%" height={240}>
                 <PieChart>
                   <Pie data={statusData} cx="50%" cy="50%" outerRadius={90} dataKey="value"
@@ -118,97 +141,97 @@ function Reports() {
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
-            ) : (
-              <div className="empty-state"><div className="empty-state-icon">🥧</div><div className="empty-state-text">No data</div></div>
-            )}
-          </div>
-        </div>
+              </div>
+            </div>
+          ) : null}
 
-        {/* Category Revenue */}
-        <div className="card">
-          <div className="card-header">
-            <span className="card-title">🏷️ Revenue by Category</span>
-          </div>
-          <div className="card-body">
-            {categoryData.length > 0 ? (
+          {showCategoryRevenue ? (
+            <div className="card">
+              <div className="card-header">
+                <span className="card-title">🏷️ Revenue by Category</span>
+              </div>
+              <div className="card-body">
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={categoryData} layout="vertical" margin={{ left: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
+                  <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => formatLkrCompact(v)} />
                   <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={80} />
-                  <Tooltip formatter={(v) => formatCurrency(v)} />
+                  <Tooltip formatter={(v) => formatLkr(v)} />
                   <Bar dataKey="revenue" fill="#ff6b00" radius={[0, 4, 4, 0]} name="Revenue" />
                 </BarChart>
               </ResponsiveContainer>
-            ) : (
-              <div className="empty-state"><div className="empty-state-icon">🏷️</div><div className="empty-state-text">No data</div></div>
-            )}
-          </div>
+              </div>
+            </div>
+          ) : null}
         </div>
-      </div>
+      ) : null}
 
-      {/* Events Performance Table */}
-      <div className="card" style={{ marginBottom: 20 }}>
-        <div className="card-header">
-          <span className="card-title">🎪 Event Performance</span>
-        </div>
-        {eventData.length > 0 ? (
+      {showEventPerformance ? (
+        <div className="card" style={{ marginBottom: 20 }}>
+          <div className="card-header">
+            <span className="card-title">🎪 Event Performance</span>
+          </div>
           <div className="card-body" style={{ padding: '10px 20px 20px' }}>
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={eventData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                 <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
-                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
-                <Tooltip formatter={(v, name) => name === 'Revenue' ? formatCurrency(v) : v} />
+                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} tickFormatter={(v) => formatLkrCompact(v)} />
+                <Tooltip formatter={(v, name) => name === 'Revenue' ? formatLkr(v) : v} />
                 <Legend />
                 <Bar yAxisId="left" dataKey="tickets" fill="#ff6b00" name="Tickets" radius={[4,4,0,0]} />
                 <Bar yAxisId="right" dataKey="revenue" fill="#3b82f6" name="Revenue" radius={[4,4,0,0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
-        ) : (
-          <div className="empty-state"><div className="empty-state-icon">🎪</div><div className="empty-state-text">No event data yet</div></div>
-        )}
-      </div>
-
-      {/* Event Revenue Table */}
-      <div className="card">
-        <div className="card-header">
-          <span className="card-title">📋 Event-wise Revenue Table</span>
         </div>
-        <div className="table-container">
-          {(data?.bookingsPerEvent || []).length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-state-icon">📋</div>
-              <div className="empty-state-text">No data available</div>
-            </div>
-          ) : (
+      ) : null}
+
+      {showEventRevenueTable ? (
+        <div className="card">
+          <div className="card-header">
+            <span className="card-title">📋 Event-wise Revenue Table</span>
+          </div>
+          <div className="table-container">
             <table>
               <thead>
                 <tr>
                   <th>#</th>
                   <th>Event</th>
+                  <th>Category</th>
                   <th>Total Bookings</th>
                   <th>Tickets Sold</th>
+                  <th>Occupancy</th>
                   <th>Revenue</th>
                 </tr>
               </thead>
               <tbody>
-                {(data?.bookingsPerEvent || []).map((e, i) => (
+                {eventRevenueRows.map((e, i) => (
                   <tr key={i}>
                     <td>{i + 1}</td>
                     <td style={{ fontWeight: 600 }}>{e.eventTitle}</td>
+                    <td>{e.category}</td>
                     <td>{e.totalBookings}</td>
                     <td>{e.totalTickets}</td>
-                    <td style={{ color: 'var(--primary)', fontWeight: 600 }}>{formatCurrency(e.totalRevenue)}</td>
+                    <td>{e.occupancyRate}%</td>
+                    <td style={{ color: 'var(--primary)', fontWeight: 600 }}>{formatLkr(e.totalRevenue)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          )}
+          </div>
         </div>
-      </div>
+      ) : null}
+
+      {!hasRenderableSections ? (
+        <div className="card">
+          <div className="empty-state" style={{ padding: '3rem 1.5rem' }}>
+            <div className="empty-state-icon">📊</div>
+            <div className="empty-state-text">No report data is available yet.</div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -2,7 +2,36 @@ const Event = require('../models/Event');
 const Booking = require('../models/Booking');
 const User = require('../models/User');
 const PDFDocument = require('pdfkit');
-const { displayReportPrice } = require('../utils/currency');
+
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const getRecentMonthBuckets = (count = 6) => {
+  const now = new Date();
+  const buckets = [];
+
+  for (let index = count - 1; index >= 0; index -= 1) {
+    const date = new Date(now.getFullYear(), now.getMonth() - index, 1);
+    buckets.push({
+      year: date.getFullYear(),
+      month: date.getMonth() + 1,
+      label: `${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`,
+      start: new Date(date.getFullYear(), date.getMonth(), 1),
+      end: new Date(date.getFullYear(), date.getMonth() + 1, 1),
+    });
+  }
+
+  return buckets;
+};
+
+const createStatusMap = (rows) =>
+  rows.reduce(
+    (accumulator, row) => {
+      const key = row._id || 'unknown';
+      accumulator[key] = row.count || 0;
+      return accumulator;
+    },
+    { confirmed: 0, pending: 0, cancelled: 0 }
+  );
 
 // @desc    Get dashboard stats
 // @route   GET /api/admin/dashboard
@@ -65,94 +94,184 @@ exports.getDashboardStats = async (req, res) => {
 // @access  Admin
 exports.getReports = async (req, res) => {
   try {
-    // Bookings per event
-    const bookingsPerEvent = await Booking.aggregate([
-      { $match: { status: { $ne: 'cancelled' } } },
-      {
-        $group: {
-          _id: '$eventId',
-          totalBookings: { $sum: 1 },
-          totalTickets: { $sum: '$ticketQuantity' },
-          totalRevenue: { $sum: '$totalAmount' },
-        },
-      },
-      {
-        $lookup: {
-          from: 'events',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'event',
-        },
-      },
-      { $unwind: { path: '$event', preserveNullAndEmpty: false } },
-      {
-        $project: {
-          eventTitle: '$event.title',
-          totalBookings: 1,
-          totalTickets: 1,
-          totalRevenue: 1,
-        },
-      },
-      { $sort: { totalRevenue: -1 } },
-      { $limit: 10 },
-    ]);
+    const monthBuckets = getRecentMonthBuckets(6);
+    const firstMonthStart = monthBuckets[0].start;
 
-    // Monthly revenue (last 6 months)
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-
-    const monthlyRevenue = await Booking.aggregate([
-      {
-        $match: {
-          status: { $ne: 'cancelled' },
-          createdAt: { $gte: sixMonthsAgo },
-        },
-      },
-      {
-        $group: {
-          _id: {
-            year: { $year: '$createdAt' },
-            month: { $month: '$createdAt' },
+    const [
+      totalBookings,
+      confirmedRevenueResult,
+      statusRows,
+      monthlyRows,
+      categoryRows,
+      eventRows,
+    ] = await Promise.all([
+      Booking.countDocuments(),
+      Booking.aggregate([
+        { $match: { status: 'confirmed' } },
+        { $group: { _id: null, totalRevenue: { $sum: '$totalAmount' } } },
+      ]),
+      Booking.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+      Booking.aggregate([
+        { $match: { createdAt: { $gte: firstMonthStart } } },
+        {
+          $group: {
+            _id: {
+              year: { $year: '$createdAt' },
+              month: { $month: '$createdAt' },
+            },
+            bookings: { $sum: 1 },
+            revenue: {
+              $sum: {
+                $cond: [{ $eq: ['$status', 'confirmed'] }, '$totalAmount', 0],
+              },
+            },
           },
-          revenue: { $sum: '$totalAmount' },
-          bookings: { $sum: 1 },
         },
-      },
-      { $sort: { '_id.year': 1, '_id.month': 1 } },
+      ]),
+      Booking.aggregate([
+        { $match: { status: 'confirmed' } },
+        {
+          $lookup: {
+            from: 'events',
+            localField: 'eventId',
+            foreignField: '_id',
+            as: 'event',
+          },
+        },
+        { $unwind: { path: '$event', preserveNullAndEmpty: false } },
+        {
+          $group: {
+            _id: '$event.category',
+            bookings: { $sum: 1 },
+            tickets: { $sum: '$ticketQuantity' },
+            revenue: { $sum: '$totalAmount' },
+          },
+        },
+        { $sort: { revenue: -1, bookings: -1 } },
+      ]),
+      Booking.aggregate([
+        {
+          $lookup: {
+            from: 'events',
+            localField: 'eventId',
+            foreignField: '_id',
+            as: 'event',
+          },
+        },
+        { $unwind: { path: '$event', preserveNullAndEmpty: false } },
+        {
+          $group: {
+            _id: '$eventId',
+            eventTitle: { $first: '$event.title' },
+            category: { $first: '$event.category' },
+            totalSeats: { $first: '$event.totalSeats' },
+            totalBookings: { $sum: 1 },
+            confirmedBookings: {
+              $sum: { $cond: [{ $eq: ['$status', 'confirmed'] }, 1, 0] },
+            },
+            pendingBookings: {
+              $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] },
+            },
+            cancelledBookings: {
+              $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] },
+            },
+            ticketsSold: {
+              $sum: { $cond: [{ $eq: ['$status', 'confirmed'] }, '$ticketQuantity', 0] },
+            },
+            totalRevenue: {
+              $sum: { $cond: [{ $eq: ['$status', 'confirmed'] }, '$totalAmount', 0] },
+            },
+          },
+        },
+        { $sort: { ticketsSold: -1, totalRevenue: -1, totalBookings: -1 } },
+      ]),
     ]);
 
-    // Booking status breakdown
-    const statusBreakdown = await Booking.aggregate([
-      { $group: { _id: '$status', count: { $sum: 1 } } },
-    ]);
+    const statusMap = createStatusMap(statusRows);
+    const totalRevenue = confirmedRevenueResult[0]?.totalRevenue || 0;
 
-    // Category breakdown
-    const categoryBreakdown = await Booking.aggregate([
-      { $match: { status: { $ne: 'cancelled' } } },
-      {
-        $lookup: {
-          from: 'events',
-          localField: 'eventId',
-          foreignField: '_id',
-          as: 'event',
-        },
-      },
-      { $unwind: { path: '$event', preserveNullAndEmpty: false } },
-      {
-        $group: {
-          _id: '$event.category',
-          count: { $sum: 1 },
-          revenue: { $sum: '$totalAmount' },
-        },
-      },
-    ]);
+    const monthlyMap = monthlyRows.reduce((accumulator, row) => {
+      const key = `${row._id.year}-${row._id.month}`;
+      accumulator[key] = {
+        revenue: row.revenue || 0,
+        bookings: row.bookings || 0,
+      };
+      return accumulator;
+    }, {});
+
+    const monthlyPerformance = monthBuckets.map((bucket) => {
+      const key = `${bucket.year}-${bucket.month}`;
+      const values = monthlyMap[key] || { revenue: 0, bookings: 0 };
+
+      return {
+        month: bucket.label,
+        year: bucket.year,
+        monthNumber: bucket.month,
+        revenue: values.revenue,
+        bookings: values.bookings,
+      };
+    });
+
+    const categoryRevenue = categoryRows.map((row) => ({
+      name: row._id || 'Other',
+      bookings: row.bookings || 0,
+      tickets: row.tickets || 0,
+      revenue: row.revenue || 0,
+    }));
+
+    const eventRevenueTable = eventRows.map((row) => {
+      const totalSeats = row.totalSeats || 0;
+      const occupancyRate = totalSeats > 0 ? Number(((row.ticketsSold / totalSeats) * 100).toFixed(2)) : 0;
+
+      return {
+        eventId: row._id,
+        eventTitle: row.eventTitle || 'Untitled event',
+        category: row.category || 'Other',
+        totalBookings: row.totalBookings || 0,
+        confirmedBookings: row.confirmedBookings || 0,
+        pendingBookings: row.pendingBookings || 0,
+        cancelledBookings: row.cancelledBookings || 0,
+        totalTickets: row.ticketsSold || 0,
+        totalRevenue: row.totalRevenue || 0,
+        totalSeats,
+        occupancyRate,
+      };
+    });
+
+    const eventPerformance = eventRevenueTable.filter((row) => row.totalBookings > 0).slice(0, 8);
+    const topCategory = categoryRevenue[0]?.name || null;
+    const hasMonthlyData = monthlyPerformance.some((item) => item.revenue > 0 || item.bookings > 0);
+    const hasStatusData = Object.values(statusMap).some((value) => value > 0);
+    const hasCategoryRevenue = categoryRevenue.length > 0;
+    const hasEventPerformance = eventPerformance.length > 0;
+    const hasEventRevenueTable = eventRevenueTable.length > 0;
 
     res.json({
       success: true,
-      bookingsPerEvent,
-      monthlyRevenue,
-      statusBreakdown,
-      categoryBreakdown,
+      summary: {
+        totalBookings,
+        totalRevenue,
+        completedBookings: statusMap.confirmed,
+        pendingBookings: statusMap.pending,
+        cancelledBookings: statusMap.cancelled,
+        topCategory,
+      },
+      monthlyPerformance,
+      visibility: {
+        monthlyPerformance: hasMonthlyData,
+        statusDistribution: hasStatusData,
+        categoryRevenue: hasCategoryRevenue,
+        eventPerformance: hasEventPerformance,
+        eventRevenueTable: hasEventRevenueTable,
+      },
+      statusDistribution: [
+        { key: 'completed', name: 'Completed', value: statusMap.confirmed },
+        { key: 'pending', name: 'Pending', value: statusMap.pending },
+        { key: 'cancelled', name: 'Cancelled', value: statusMap.cancelled },
+      ].filter((item) => item.value > 0),
+      categoryRevenue,
+      eventPerformance,
+      eventRevenueTable,
     });
   } catch (error) {
     console.error(error);

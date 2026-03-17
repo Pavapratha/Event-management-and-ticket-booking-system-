@@ -932,7 +932,7 @@ function QRValidation() {
                       <div className="detail-row">
                         <span className="detail-label">Amount:</span>
                         <span className="detail-value amount">
-                          ${validationResult.totalAmount?.toFixed(2) || '0.00'}
+                          LKR {Number(validationResult.totalAmount || 0).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       </div>
                       <div className="detail-row">
@@ -1009,8 +1009,8 @@ function QRValidation() {
                           <div key={idx} className="ticket-row">
                             <span>{ticket.categoryName}</span>
                             <span>{ticket.quantity}</span>
-                            <span>${ticket.price?.toFixed(2) || '0.00'}</span>
-                            <span>${ticket.subtotal?.toFixed(2) || '0.00'}</span>
+                            <span>LKR {Number(ticket.price || 0).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            <span>LKR {Number(ticket.subtotal || 0).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                           </div>
                         ))}
                       </div>

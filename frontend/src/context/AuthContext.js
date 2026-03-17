@@ -1,10 +1,11 @@
-import React, { createContext, useState, useCallback } from 'react';
+import React, { createContext, useState, useCallback, useEffect } from 'react';
 import { authAPI } from '../services/api';
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -35,6 +36,7 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         localStorage.setItem('token', token);
         setUser(user);
+        setAuthChecked(true);
       }
       return { success: true, user };
     } catch (err) {
@@ -54,6 +56,7 @@ export const AuthProvider = ({ children }) => {
       const { token, user } = response.data;
       localStorage.setItem('token', token);
       setUser(user);
+      setAuthChecked(true);
       return { success: true, user };
     } catch (err) {
       const message = err.response?.data?.message || 'Login failed';
@@ -68,6 +71,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     setUser(null);
     setError(null);
+    setAuthChecked(true);
   }, []);
 
   const getCurrentUser = useCallback(async () => {
@@ -81,10 +85,26 @@ export const AuthProvider = ({ children }) => {
     }
   }, [logout]);
 
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      setAuthChecked(true);
+      return;
+    }
+
+    getCurrentUser()
+      .catch(() => null)
+      .finally(() => {
+        setAuthChecked(true);
+      });
+  }, [getCurrentUser]);
+
   return (
     <AuthContext.Provider
       value={{
         user,
+        authChecked,
         loading,
         error,
         register,

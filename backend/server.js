@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const userRoutes = require('./routes/user');
 const feedbackRoutes = require('./routes/feedback');
+const chatbotRoutes = require('./chatbot/chatbotRoutes');
 const { startEventReminderScheduler } = require('./jobs/eventReminderScheduler');
 
 const app = express();
@@ -32,6 +33,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/chatbot', chatbotRoutes);
 app.use('/api', userRoutes);
 
 // Health check

@@ -14,6 +14,7 @@ import { Home } from './pages/Home';
 import { MyTickets } from './pages/MyTickets';
 import { Notifications } from './pages/Notifications';
 import Feedback from './pages/Feedback';
+import Chatbot from './components/Chatbot';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
@@ -154,6 +155,10 @@ const AppRoutes = () => {
         path="/my-tickets"
         element={<Navigate to="/tickets" />}
       />
+      <Route
+        path="/my-bookings"
+        element={<Navigate to="/tickets" />}
+      />
       
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" />} />
@@ -167,6 +172,7 @@ function App() {
       <AuthProvider>
         <BookingProvider>
           <AppRoutes />
+          <Chatbot />
         </BookingProvider>
       </AuthProvider>
     </Router>
