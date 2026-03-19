@@ -33,6 +33,10 @@ const createStatusMap = (rows) =>
     { confirmed: 0, pending: 0, cancelled: 0 }
   );
 
+const getBookingCustomerName = (booking) => booking.userId?.name?.trim() || 'Unknown';
+
+const getBookingCustomerEmail = (booking) => booking.userId?.email?.trim() || 'N/A';
+
 // @desc    Get dashboard stats
 // @route   GET /api/admin/dashboard
 // @access  Admin
@@ -312,8 +316,8 @@ exports.getEventReportData = async (req, res) => {
       occupancyRate: ((ticketsSold / event.totalSeats) * 100).toFixed(2),
       bookings: confirmedBookings.map(b => ({
         bookingId: b.bookingId,
-        customerName: b.userId.name,
-        customerEmail: b.userId.email,
+        customerName: getBookingCustomerName(b),
+        customerEmail: getBookingCustomerEmail(b),
         ticketsBooked: b.ticketQuantity,
         totalAmount: b.totalAmount,
         bookingDate: b.createdAt,
@@ -352,6 +356,9 @@ exports.downloadEventCSV = async (req, res) => {
     
     const ticketsSold = confirmedBookings.reduce((sum, b) => sum + b.ticketQuantity, 0);
     const revenue = confirmedBookings.reduce((sum, b) => sum + b.totalAmount, 0);
+    const occupancyRate = event.totalSeats > 0
+      ? ((ticketsSold / event.totalSeats) * 100).toFixed(2)
+      : '0.00';
 
     // Create CSV content
     let csv = 'Event Management System - Event Report\n\n';
@@ -367,13 +374,15 @@ exports.downloadEventCSV = async (req, res) => {
     csv += `Total Seats,${event.totalSeats}\n`;
     csv += `Tickets Sold,${ticketsSold}\n`;
     csv += `Tickets Available,${event.totalSeats - ticketsSold}\n`;
-    csv += `Occupancy Rate,${((ticketsSold / event.totalSeats) * 100).toFixed(2)}%\n`;
+    csv += `Occupancy Rate,${occupancyRate}%\n`;
     csv += `Total Revenue,LKR ${revenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}\n`;
     csv += `\n=== BOOKING DETAILS ===\n`;
     csv += 'Booking ID,Customer Name,Email,Tickets Booked,Amount (LKR),Booking Date,Status\n';
 
     confirmedBookings.forEach(booking => {
-      csv += `"${booking.bookingId}","${booking.userId.name}","${booking.userId.email}",${booking.ticketQuantity},"${booking.totalAmount.toFixed(2)}","${new Date(booking.createdAt).toLocaleString()}","${booking.status}"\n`;
+      const customerName = getBookingCustomerName(booking);
+      const customerEmail = getBookingCustomerEmail(booking);
+      csv += `"${booking.bookingId}","${customerName}","${customerEmail}",${booking.ticketQuantity},"${booking.totalAmount.toFixed(2)}","${new Date(booking.createdAt).toLocaleString()}","${booking.status}"\n`;
     });
 
     // Set response headers for download
@@ -404,6 +413,7 @@ exports.downloadEventCSV = async (req, res) => {
 // @route   GET /api/admin/events/:id/download-pdf
 // @access  Admin
 exports.downloadEventPDF = async (req, res) => {
+  let doc;
   try {
     console.log('\n' + '='.repeat(60));
     console.log('📥 PDF DOWNLOAD STARTED');
@@ -424,11 +434,14 @@ exports.downloadEventPDF = async (req, res) => {
     
     const ticketsSold = confirmedBookings.reduce((sum, b) => sum + b.ticketQuantity, 0);
     const revenue = confirmedBookings.reduce((sum, b) => sum + b.totalAmount, 0);
-    const occupancyRate = ((ticketsSold / event.totalSeats) * 100).toFixed(2);
+    const occupancyRate = event.totalSeats > 0
+      ? ((ticketsSold / event.totalSeats) * 100).toFixed(2)
+      : '0.00';
 
     // Create PDF document
-    const doc = new PDFDocument({ margin: 50 });
+    doc = new PDFDocument({ margin: 50 });
     const filename = `${event.title.replace(/\s+/g, '_')}_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+    let responseClosed = false;
 
     // Set response headers
     res.setHeader('Content-Type', 'application/pdf');
@@ -437,9 +450,23 @@ exports.downloadEventPDF = async (req, res) => {
     console.log('PDF Setup: Headers set, filename:', filename);
 
     // Handle errors on the response stream
+    res.on('close', () => {
+      responseClosed = true;
+    });
+
     res.on('error', (err) => {
       console.error('Response stream error:', err.message);
-      doc.end();
+      responseClosed = true;
+    });
+
+    doc.on('error', (err) => {
+      console.error('PDF document error:', err.message);
+
+      if (!res.headersSent) {
+        res.status(500).json({ success: false, message: 'Failed to generate PDF report', error: err.message });
+      } else if (!res.writableEnded && !responseClosed) {
+        res.end();
+      }
     });
 
     // Pipe document to response
@@ -500,8 +527,9 @@ exports.downloadEventPDF = async (req, res) => {
         y = 50;
       }
 
+      const customerName = getBookingCustomerName(booking);
       doc.text(booking.bookingId, col1, y);
-      doc.text(booking.userId.name.substring(0, 15), col2, y);
+      doc.text(customerName.substring(0, 15), col2, y);
       doc.text(booking.ticketQuantity.toString(), col3, y);
       doc.text(`${booking.totalAmount.toFixed(2)}`, col4, y);
       doc.text(new Date(booking.createdAt).toLocaleDateString(), col5, y);
@@ -532,8 +560,7 @@ exports.downloadEventPDF = async (req, res) => {
     
     if (!res.headersSent) {
       res.status(500).json({ success: false, message: 'Failed to generate PDF report', error: error.message });
-    } else {
-      // Headers already sent, just end the response
+    } else if (doc && !doc.ended) {
       res.end();
     }
   }
